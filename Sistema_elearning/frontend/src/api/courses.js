@@ -73,3 +73,26 @@ export const getCourseDetails = async (courseId) => {
         throw error;
     }
 };
+
+export const createCompleteCourse = async (courseData) => {
+  const response = await api.post('/courses/create-complete/', courseData);
+  return response.data;
+};
+
+export const fetchPeriods = async () => {
+  const response = await api.get('/courses/periods/');
+  return response.data;
+};
+
+export const uploadCourseMaterial = async (courseId, formData) => {
+  const response = await api.post(
+    `/courses/${courseId}/materials/`, 
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    }
+  );
+  return response.data;
+};

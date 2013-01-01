@@ -1,16 +1,54 @@
 # courses/serializers.py
 from rest_framework import serializers
-from .models import (
-    Course, 
-    Quiz, 
-    Question, 
-    Gamification,
-    QuizSubmission
-)
 from django.contrib.auth import get_user_model
+from .models import (
+    Course,
+    Quiz,
+    Question,
+    Gamification,
+    QuizSubmission,
+    InstructionalObjective,
+    CourseMaterial
+)
 
 User = get_user_model()
 
+# ============== SERIALIZADORES BASE ==============
+class InstructionalObjectiveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InstructionalObjective
+        fields = ['id', 'description', 'order']
+
+class CourseMaterialSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseMaterial
+        fields = [
+            'id', 'title', 'material_type', 'file', 
+            'url', 'description', 'created_at'
+        ]
+
+class GamificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Gamification
+        fields = [
+            'id', 'points_per_question', 'badge_name',
+            'badge_image', 'xp_reward', 'time_limit_minutes'
+        ]
+        extra_kwargs = {'quiz': {'read_only': True}}
+
+class QuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Question
+        fields = [
+            'id', 'text', 'question_type', 'options',
+            'points', 'order', 'quiz'
+        ]
+        extra_kwargs = {
+            'correct_answer': {'write_only': True},
+            'quiz': {'read_only': True}
+        }
+
+# ============== SERIALIZADORES DE CURSOS ==============
 class CourseSerializer(serializers.ModelSerializer):
     teacher_name = serializers.CharField(
         source='teacher.get_full_name', 
@@ -27,11 +65,25 @@ class CourseSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'teacher', 'teacher_name',
             'student_count', 'created_at', 'updated_at'
         ]
-        extra_kwargs = {
-            'teacher': {'read_only': True}
-        }
+        extra_kwargs = {'teacher': {'read_only': True}}
 
+class CourseDetailSerializer(CourseSerializer):
+    objectives = InstructionalObjectiveSerializer(many=True, read_only=True)
+    materials = CourseMaterialSerializer(many=True, read_only=True)
+    quizzes = serializers.SerializerMethodField()
 
+    class Meta(CourseSerializer.Meta):
+        fields = CourseSerializer.Meta.fields + [
+            'period', 'year', 'objectives', 'materials', 'quizzes'
+        ]
+
+    def get_quizzes(self, obj):
+        return QuizSerializer(
+            obj.quizzes.all().order_by('created_at'),
+            many=True
+        ).data
+
+# ============== SERIALIZADORES DE QUIZZES ==============
 class QuizSerializer(serializers.ModelSerializer):
     course_title = serializers.CharField(
         source='course.title',
@@ -50,7 +102,6 @@ class QuizSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
 
-
 class QuizDetailSerializer(QuizSerializer):
     gamification = serializers.SerializerMethodField()
 
@@ -62,7 +113,6 @@ class QuizDetailSerializer(QuizSerializer):
             return GamificationSerializer(obj.gamification).data
         except Quiz.gamification.RelatedObjectDoesNotExist:
             return None
-
 
 class QuizWithQuestionsSerializer(QuizSerializer):
     questions = serializers.SerializerMethodField()
@@ -76,32 +126,7 @@ class QuizWithQuestionsSerializer(QuizSerializer):
             many=True
         ).data
 
-
-class QuestionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Question
-        fields = [
-            'id', 'text', 'question_type', 'options',
-            'points', 'order', 'quiz'
-        ]
-        extra_kwargs = {
-            'correct_answer': {'write_only': True},
-            'quiz': {'read_only': True}
-        }
-
-
-class GamificationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Gamification
-        fields = [
-            'id', 'points_per_question', 'badge_name',
-            'badge_image', 'xp_reward', 'time_limit_minutes'
-        ]
-        extra_kwargs = {
-            'quiz': {'read_only': True}
-        }
-
-
+# ============== SERIALIZADORES DE ENVÍOS ==============
 class QuizSubmissionSerializer(serializers.ModelSerializer):
     quiz_title = serializers.CharField(
         source='quiz.title',
@@ -123,7 +148,6 @@ class QuizSubmissionSerializer(serializers.ModelSerializer):
             'student': {'read_only': True},
             'answers': {'write_only': True}
         }
-
 
 class QuizResultSerializer(serializers.ModelSerializer):
     questions = serializers.SerializerMethodField()

@@ -2,10 +2,16 @@
 from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils import timezone
 
 User = settings.AUTH_USER_MODEL
 
 class Course(models.Model):
+    PERIOD_CHOICES = (
+        ('I', 'Periodo I'),
+        ('II', 'Periodo II'),
+    )
+    
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     teacher = models.ForeignKey(
@@ -18,14 +24,61 @@ class Course(models.Model):
         related_name='courses_enrolled',
         blank=True
     )
+    period = models.CharField(
+        max_length=2,
+        choices=PERIOD_CHOICES,
+        default='I'
+    )
+    year = models.PositiveIntegerField(
+        default=timezone.now().year
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created_at']
 
-    def __str__(self):
-        return self.title
+
+class InstructionalObjective(models.Model):
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name='objectives'
+    )
+    description = models.TextField()
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order']
+
+
+class CourseMaterial(models.Model):
+    MATERIAL_TYPES = (
+        ('DOC', 'Documento'),
+        ('VID', 'Video'),
+        ('LNK', 'Enlace'),
+        ('PPT', 'Presentación'),
+    )
+    
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name='materials'
+    )
+    title = models.CharField(max_length=200)
+    material_type = models.CharField(
+        max_length=3,
+        choices=MATERIAL_TYPES,
+        default='DOC'
+    )
+    file = models.FileField(
+        upload_to='course_materials/',
+        null=True,
+        blank=True
+    )
+    url = models.URLField(blank=True)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class Quiz(models.Model):

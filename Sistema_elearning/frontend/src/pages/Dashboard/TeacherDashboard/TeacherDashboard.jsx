@@ -1,15 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
-import { fetchTeacherCourses, createCourse } from '../../../api/courses';
+import { 
+  fetchTeacherCourses, 
+  createCourse,
+  fetchPeriods,
+  getCourseDetails
+} from '../../../api/courses';
 import { getQuizzesByCourse } from '../../../api/quizzes';
 import Sidebar from '../../../components/teacher/Sidebar';
 import Header from '../../../components/teacher/Header';
-import QuizForm from './QuizForm';
+import CourseCreationWizard from './components/CourseCreationWizard';
+import CourseDetailView from './CourseDetailView/CourseDetailView';
+import QuizForm from './CourseDetailView/QuizForm';
 import {
   PlusIcon,
   XMarkIcon,
   UserGroupIcon,
-  ClipboardDocumentCheckIcon
+  ArrowLeftIcon
 } from '@heroicons/react/24/outline';
 
 const TeacherDashboard = () => {
@@ -21,16 +28,22 @@ const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState('my-courses');
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [showQuizForm, setShowQuizForm] = useState(false);
-  const [showCourseForm, setShowCourseForm] = useState(false);
-  const [courseTitle, setCourseTitle] = useState('');
+  const [showCourseWizard, setShowCourseWizard] = useState(false);
   const [quizzes, setQuizzes] = useState([]);
+  const [periods, setPeriods] = useState([]);
+  const [courseDetails, setCourseDetails] = useState(null);
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'detail'
 
-  // Cargar cursos
+  // Cargar datos iniciales
   useEffect(() => {
-    const loadCourses = async () => {
+    const loadInitialData = async () => {
       try {
-        const data = await fetchTeacherCourses();
-        setCourses(data);
+        const [coursesData, periodsData] = await Promise.all([
+          fetchTeacherCourses(),
+          fetchPeriods()
+        ]);
+        setCourses(coursesData);
+        setPeriods(periodsData);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -38,35 +51,34 @@ const TeacherDashboard = () => {
       }
     };
 
-    if (user?.role === 'teacher') loadCourses();
+    if (user?.role === 'teacher') loadInitialData();
   }, [user]);
 
-  // Crear nuevo curso
-  const handleCreateCourse = async (e) => {
-    e.preventDefault();
+  // Cargar detalles del curso cuando se selecciona
+  const loadCourseDetails = async (courseId) => {
     try {
-      const newCourse = await createCourse({
-        title: courseTitle,
-        teacher_id: user.id
-      });
-      setCourses([...courses, newCourse]);
-      setCourseTitle('');
-      setShowCourseForm(false);
-    } catch (error) {
-      setError(error.response?.data?.detail || 'Error al crear el curso');
+      const details = await getCourseDetails(courseId);
+      setCourseDetails(details);
+      setViewMode('detail');
+    } catch (err) {
+      setError(err.message);
     }
   };
 
   // Cambiar pestaña
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
-    if (tabId !== 'quizzes') setShowQuizForm(false);
+    if (tabId !== 'quizzes') {
+      setShowQuizForm(false);
+      setSelectedCourse(null);
+    }
+    setViewMode('list');
   };
 
   // Cargar quizzes cuando se selecciona un curso
   useEffect(() => {
     const loadQuizzes = async () => {
-      if (selectedCourse) {
+      if (selectedCourse && activeTab === 'quizzes') {
         try {
           const data = await getQuizzesByCourse(selectedCourse.id);
           setQuizzes(data);
@@ -76,8 +88,16 @@ const TeacherDashboard = () => {
       }
     };
 
-    if (activeTab === 'quizzes') loadQuizzes();
+    loadQuizzes();
   }, [selectedCourse, activeTab]);
+
+  // Manejar creación de curso exitosa
+  const handleCourseCreated = (newCourse) => {
+    setCourses([...courses, newCourse]);
+    setShowCourseWizard(false);
+    setSelectedCourse(newCourse);
+    loadCourseDetails(newCourse.id);
+  };
 
   if (loading) {
     return (
@@ -105,16 +125,31 @@ const TeacherDashboard = () => {
             </div>
           )}
 
-          {activeTab === 'my-courses' && (
+          {viewMode === 'detail' && courseDetails && (
             <div className="max-w-7xl mx-auto">
-              {/* Sección de Cursos */}
+              <button
+                onClick={() => setViewMode('list')}
+                className="flex items-center text-indigo-600 mb-4"
+              >
+                <ArrowLeftIcon className="h-5 w-5 mr-1" />
+                Volver a la lista
+              </button>
+              <CourseDetailView 
+                course={courseDetails} 
+                onQuizCreated={() => loadCourseDetails(courseDetails.id)}
+              />
+            </div>
+          )}
+
+          {viewMode === 'list' && activeTab === 'my-courses' && (
+            <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-xl shadow-sm">
                 <div>
                   <h2 className="text-3xl font-bold text-gray-800">Mis Cursos</h2>
                   <p className="text-gray-600 mt-1">Gestiona tus cursos académicos</p>
                 </div>
                 <button
-                  onClick={() => setShowCourseForm(true)}
+                  onClick={() => setShowCourseWizard(true)}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg flex items-center gap-2"
                 >
                   <PlusIcon className="h-5 w-5" />
@@ -122,42 +157,15 @@ const TeacherDashboard = () => {
                 </button>
               </div>
 
-              {/* Formulario de Curso */}
-              {showCourseForm && (
-                <div className="bg-white p-6 rounded-xl shadow-md mb-8">
-                  <form onSubmit={handleCreateCourse}>
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Nombre del curso
-                      </label>
-                      <input
-                        type="text"
-                        value={courseTitle}
-                        onChange={(e) => setCourseTitle(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg"
-                        required
-                      />
-                    </div>
-                    <div className="flex justify-end space-x-3">
-                      <button
-                        type="button"
-                        onClick={() => setShowCourseForm(false)}
-                        className="px-4 py-2.5 border border-gray-300 rounded-lg"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="submit"
-                        className="px-4 py-2.5 bg-indigo-600 text-white rounded-lg"
-                      >
-                        Crear Curso
-                      </button>
-                    </div>
-                  </form>
-                </div>
+              {showCourseWizard && (
+                <CourseCreationWizard
+                  periods={periods}
+                  teacherId={user.id}
+                  onSuccess={handleCourseCreated}
+                  onCancel={() => setShowCourseWizard(false)}
+                />
               )}
 
-              {/* Lista de Cursos */}
               {courses.length === 0 ? (
                 <div className="bg-white p-8 rounded-xl text-center">
                   <UserGroupIcon className="h-16 w-16 mx-auto text-gray-400" />
@@ -168,14 +176,31 @@ const TeacherDashboard = () => {
                   {courses.map((course) => (
                     <div
                       key={course.id}
-                      className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all"
-                      onClick={() => {
-                        setSelectedCourse(course);
-                        setActiveTab('quizzes');
-                      }}
+                      className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all cursor-pointer"
+                      onClick={() => loadCourseDetails(course.id)}
                     >
-                      <h3 className="font-bold text-lg text-gray-800">{course.title}</h3>
-                      <p className="text-gray-500 mt-2 text-sm">Código: {course.code || 'N/A'}</p>
+                      <div className="flex justify-between items-start">
+                        <h3 className="font-bold text-lg text-gray-800">{course.title}</h3>
+                        <span className="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded">
+                          {course.period}-{course.year}
+                        </span>
+                      </div>
+                      <p className="text-gray-500 mt-2 text-sm">{course.description || 'Sin descripción'}</p>
+                      <div className="mt-4 flex justify-between items-center">
+                        <span className="text-sm text-gray-500">
+                          {course.student_count || 0} estudiantes
+                        </span>
+                        <button 
+                          className="text-indigo-600 text-sm font-medium"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCourse(course);
+                            setActiveTab('quizzes');
+                          }}
+                        >
+                          Ver evaluaciones
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -183,9 +208,8 @@ const TeacherDashboard = () => {
             </div>
           )}
 
-          {activeTab === 'quizzes' && selectedCourse && (
+          {viewMode === 'list' && activeTab === 'quizzes' && selectedCourse && (
             <div className="max-w-7xl mx-auto">
-              {/* Sección de Quizzes */}
               <div className="flex justify-between items-center mb-8 bg-white p-6 rounded-xl shadow-sm">
                 <div>
                   <h2 className="text-3xl font-bold text-gray-800">
@@ -231,8 +255,31 @@ const TeacherDashboard = () => {
                   ) : (
                     <div className="space-y-4">
                       {quizzes.map((quiz) => (
-                        <div key={quiz.id} className="border border-gray-200 rounded-lg p-5">
-                          <h4 className="font-bold text-lg">{quiz.title}</h4>
+                        <div key={quiz.id} className="border border-gray-200 rounded-lg p-5 hover:bg-gray-50">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-bold text-lg">{quiz.title}</h4>
+                              <p className="text-gray-500 text-sm mt-1">{quiz.description}</p>
+                            </div>
+                            <span className={`px-2 py-1 text-xs rounded ${
+                              quiz.is_published ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {quiz.is_published ? 'Publicado' : 'Borrador'}
+                            </span>
+                          </div>
+                          <div className="mt-3 flex justify-between items-center">
+                            <span className="text-sm text-gray-500">
+                              {quiz.question_count} preguntas
+                            </span>
+                            <button 
+                              className="text-indigo-600 text-sm font-medium"
+                              onClick={() => {
+                                // Implementar vista detalle del quiz
+                              }}
+                            >
+                              Ver resultados
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>

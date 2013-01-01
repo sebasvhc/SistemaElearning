@@ -22,17 +22,160 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+from rest_framework.views import APIView
+from rest_framework import viewsets, permissions, status, generics, mixins
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.permissions import IsAuthenticated
+from django.db import transaction, models
+from django.utils import timezone
+from datetime import timedelta
+from .models import (
+    Course, 
+    Quiz, 
+    Question, 
+    Gamification, 
+    QuizSubmission,
+    InstructionalObjective,
+    CourseMaterial
+)
+from .serializers import (
+    CourseSerializer,
+    QuizSerializer,
+    QuestionSerializer,
+    GamificationSerializer,
+    QuizSubmissionSerializer,
+    QuizDetailSerializer,
+    QuizWithQuestionsSerializer,
+    CourseDetailSerializer,
+    InstructionalObjectiveSerializer,
+    CourseMaterialSerializer
+)
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return CourseDetailSerializer
+        return super().get_serializer_class()
+
     def perform_create(self, serializer):
         if self.request.user.role != 'teacher':
             raise PermissionDenied("Solo los profesores pueden crear cursos")
-        serializer.save(teacher=self.request.user)
+        
+        current_year = timezone.now().year
+        serializer.save(
+            teacher=self.request.user,
+            year=current_year
+        )
 
+class PeriodListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        periods = [
+            {'value': 'I', 'label': 'Periodo I'},
+            {'value': 'II', 'label': 'Periodo II'}
+        ]
+        return Response(periods)
+
+class CompleteCourseCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request):
+        if request.user.role != 'teacher':
+            raise PermissionDenied("Solo profesores pueden crear cursos")
+
+        data = request.data
+        current_year = timezone.now().year
+
+        # Validar y crear el curso
+        course_serializer = CourseSerializer(data={
+            'title': data.get('title'),
+            'description': data.get('description'),
+            'period': data.get('period'),
+            'year': current_year,
+            'teacher': request.user.id
+        })
+        
+        if not course_serializer.is_valid():
+            return Response(
+                course_serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        course = course_serializer.save()
+
+        # Crear objetivos instruccionales
+        objectives = data.get('objectives', [])
+        for index, obj in enumerate(objectives):
+            InstructionalObjective.objects.create(
+                course=course,
+                description=obj.get('description'),
+                order=obj.get('order', index)
+            )
+
+        # Nota: Los materiales y evaluaciones se añadirán después mediante APIs separadas
+
+        return Response(
+            CourseDetailSerializer(course).data,
+            status=status.HTTP_201_CREATED
+        )
+
+class InstructionalObjectiveViewSet(viewsets.ModelViewSet):
+    serializer_class = InstructionalObjectiveSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        course_id = self.kwargs.get('course_pk')
+        return InstructionalObjective.objects.filter(
+            course_id=course_id,
+            course__teacher=self.request.user
+        ).order_by('order')
+
+    def perform_create(self, serializer):
+        course = Course.objects.get(pk=self.kwargs['course_pk'])
+        if course.teacher != self.request.user:
+            raise PermissionDenied("No puedes añadir objetivos a este curso.")
+        
+        # Establecer el orden como último
+        last_order = InstructionalObjective.objects.filter(course=course).aggregate(
+            models.Max('order')
+        )['order__max'] or 0
+        serializer.save(course=course, order=last_order + 1)
+
+class CourseMaterialViewSet(viewsets.ModelViewSet):
+    serializer_class = CourseMaterialSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        course_id = self.kwargs.get('course_pk')
+        return CourseMaterial.objects.filter(
+            course_id=course_id,
+            course__teacher=self.request.user
+        ).order_by('-created_at')
+
+    def perform_create(self, serializer):
+        course = Course.objects.get(pk=self.kwargs['course_pk'])
+        if course.teacher != self.request.user:
+            raise PermissionDenied("No puedes añadir materiales a este curso.")
+        serializer.save(course=course)
+
+    def create(self, request, *args, **kwargs):
+        # Manejar la subida de archivos
+        file = request.FILES.get('file')
+        if not file and not request.data.get('url'):
+            raise ValidationError("Debe proporcionar un archivo o una URL")
+        
+        return super().create(request, *args, **kwargs)
 
 class QuizViewSet(viewsets.ModelViewSet):
     serializer_class = QuizSerializer
@@ -286,3 +429,17 @@ class TeacherCoursesView(APIView):
         courses = Course.objects.filter(teacher=request.user)
         serializer = CourseSerializer(courses, many=True)
         return Response(serializer.data)
+
+
+#---------------------------------courses
+
+class CourseDetailView(generics.RetrieveAPIView):
+    queryset = Course.objects.all()
+    serializer_class = CourseDetailSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        course = super().get_object()
+        if course.teacher != self.request.user and not course.students.filter(id=self.request.user.id).exists():
+            raise PermissionDenied("No tienes acceso a este curso.")
+        return course
