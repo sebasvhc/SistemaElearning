@@ -10,14 +10,14 @@ from users.views import (
 )
 
 router = DefaultRouter()
-router.register(r'api/courses', CourseViewSet)
+# Elimina el prefijo 'api/' aquí para evitar duplicación
+router.register(r'courses', CourseViewSet, basename='course')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include(router.urls)),
     
     # Autenticación JWT
-    path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),  # Usa solo tu vista personalizada
+    path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     
     # Users
@@ -26,5 +26,6 @@ urlpatterns = [
     
     # Apps
     path('api/users/', include('users.urls')),
-    path('api/courses/', include('courses.urls')),
+    path('api/', include(router.urls)),  # Mueve el router aquí
+    path('api/', include('courses.urls')),  # Este incluye tus vistas adicionales
 ]

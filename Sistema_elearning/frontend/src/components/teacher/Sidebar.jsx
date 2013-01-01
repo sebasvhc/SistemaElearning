@@ -1,9 +1,26 @@
-// components/teacher/Sidebar.jsx
-export default function Sidebar({ activeTab, setActiveTab }) {
+export default function Sidebar({ activeTab, onTabChange, onQuizzesClick }) {
   const tabs = [
-    { id: 'courses', label: 'Cursos', icon: '📚' },
-    { id: 'students', label: 'Estudiantes', icon: '👥' },
-    { id: 'analytics', label: 'Analíticas', icon: '📊' },
+    { 
+      id: 'my-courses', 
+      label: 'Mis Cursos', 
+      icon: ''
+    },
+    { 
+      id: 'quizzes', 
+      label: 'Evaluaciones', 
+      icon: '',
+      onClick: onQuizzesClick
+    },
+    { 
+      id: 'students', 
+      label: 'Estudiantes', 
+      icon: '' 
+    },
+    { 
+      id: 'analytics', 
+      label: 'Analíticas', 
+      icon: '' 
+    }
   ];
 
   return (
@@ -16,8 +33,15 @@ export default function Sidebar({ activeTab, setActiveTab }) {
           {tabs.map(tab => (
             <li key={tab.id}>
               <button
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center w-full p-3 rounded-lg transition-colors ${activeTab === tab.id ? 'bg-blue-600' : 'hover:bg-gray-700'}`}
+                onClick={() => {
+                  onTabChange(tab.id);
+                  if (tab.onClick) tab.onClick();
+                }}
+                className={`flex items-center w-full p-3 rounded-lg transition-colors ${
+                  activeTab === tab.id 
+                    ? 'bg-blue-600' 
+                    : 'hover:bg-gray-700'
+                }`}
               >
                 <span className="mr-3">{tab.icon}</span>
                 {tab.label}

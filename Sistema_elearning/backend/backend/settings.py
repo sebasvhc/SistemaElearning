@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 #from .logging_config import LOGGING
-#from datetime import timedelta
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -79,6 +79,8 @@ SIMPLE_JWT = {
     'TOKEN_OBTAIN_SERIALIZER': 'serializers.CustomTokenObtainPairSerializer',  # Ruta a tu serializer
     'USER_ID_FIELD': 'email',  # Usar email como identificador
     'USER_ID_CLAIM': 'email',
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Ajusta según necesites
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
 
 

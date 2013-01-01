@@ -53,4 +53,16 @@ api.interceptors.response.use(
   }
 );
 
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`; // Asegúrate que sea "Bearer" con B mayúscula
+  }
+  return config;
+}, error => {
+  return Promise.reject(error);
+});
+
+
+
 export default api;

@@ -1,50 +1,48 @@
-import { useState, useContext } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
-import axios from 'axios';
+import { useAuth } from '../../context/AuthContext'; // Importa solo useAuth
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { login } = useContext(AuthContext);
-  const navigate = useNavigate();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const { login } = useAuth(); // <-- Elimina AuthContext de aquí
+    const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setError('');
 
-    try {
-      const { success, role, error } = await login(email, password);
+        try {
+            const result = await login(email, password);
 
-      if (success) {
-        // Espera breve para asegurar la actualización del estado
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        switch (role) {
-          case 'teacher':
-            navigate('/teacher-dashboard', { replace: true });
-            break;
-          case 'admin':
-            navigate('/admin-dashboard', { replace: true });
-            break;
-          default:
-            navigate('/student-dashboard', { replace: true });
+            if (result.success && result.user) {
+                // Redirigir según el rol del usuario retornado
+                switch (result.user.role) {
+                    case 'teacher':
+                        navigate('/teacher-dashboard', { replace: true });
+                        break;
+                    case 'admin':
+                        navigate('/admin-dashboard', { replace: true });
+                        break;
+                    default:
+                        navigate('/student-dashboard', { replace: true });
+                }
+            } else {
+                setError(result.error || 'Credenciales incorrectas');
+            }
+        } catch (err) {
+            setError('Error en el servidor');
+            console.error("Error completo:", err);
+        } finally {
+            setIsLoading(false);
         }
-      } else {
-        setError(error || 'Credenciales incorrectas');
-      }
-    } catch (err) {
-      setError('Error en el servidor');
-      console.error("Error completo:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
         <h2 className="text-3xl font-extrabold text-center text-gray-900">
           Iniciar sesión
@@ -96,5 +94,5 @@ export default function Login() {
         </form>
       </div>
     </div>
-  );
+    );
 } // <-- Esta es la llave de cierre que probablemente faltaba
