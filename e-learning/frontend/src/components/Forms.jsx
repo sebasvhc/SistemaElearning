@@ -26,7 +26,7 @@ const Forms = () => {
             </label>
             <input 
                 type="password" 
-                placeholder='enter your password'
+                placeholder='Ingrese su contraseña'
                 className='w-full border-2 border-gray-100 rounded-xl p-4 mt-1 bg-transparent text-white'
             />
         </div>

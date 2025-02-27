@@ -4,7 +4,7 @@ import Forms from './Forms';
 const SignUp = () => {
     return (
         <div>
-            <Forms />
+            <FormsSignUp />
         </div>
     )
 }
