@@ -1,5 +1,12 @@
 import React from "react";
 
-const FormsSignUp = () => {
-    
+function FormsSignUp() {
+    console.log("Se esta renderizando")
+    return (
+        <div>
+            <h1 className="text-white">Aparecio</h1>
+        </div>
+    );
 }
+
+export default FormsSignUp;

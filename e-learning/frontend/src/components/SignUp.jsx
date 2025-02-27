@@ -1,12 +1,13 @@
 import React from 'react';
-import Forms from './Forms';
+import FormsSignUp from './FormsSignUp';
 
 const SignUp = () => {
+    console.log("Aqui deberia aparecer")
     return (
         <div>
             <FormsSignUp />
         </div>
-    )
-}
+    );
+};
 
 export default SignUp;
