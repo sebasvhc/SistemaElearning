@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-#from rest_framework_simplejwt.tokens import RefreshToken
+
+# from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import authenticate
 
@@ -8,16 +9,25 @@ from . import models
 
 # Create your views here.
 
+
 class Login(APIView):
     serializer_class = TokenObtainPairSerializer
-    def post(self,request):
-        user = {"cedula":"","password":"",}
-        if models.Usuario.objects.filter(username=request.data['username']).exists():
-            user["cedula"] = models.Usuario.objects.get(username=request.data['username']).cedula
+
+    def post(self, request):
+        user = {
+            "cedula": "",
+            "password": "",
+        }
+        if models.Usuario.objects.filter(username=request.data["username"]).exists():
+            user["cedula"] = models.Usuario.objects.get(
+                username=request.data["username"]
+            ).cedula
             user["password"] = request.data["password"]
 
-        elif models.Usuario.objects.filter(cedula=request.data['username']).exists():
-            user["cedula"] = models.Usuario.objects.get(cedula=request.data['username']).cedula
+        elif models.Usuario.objects.filter(cedula=request.data["username"]).exists():
+            user["cedula"] = models.Usuario.objects.get(
+                cedula=request.data["username"]
+            ).cedula
             user["password"] = request.data["password"]
 
         serializer = self.serializer_class(data=user)
@@ -26,7 +36,7 @@ class Login(APIView):
         return Response(serializer.validated_data, status=200)
 
 
-'''
+"""
 class Register(APIView):
     def post(self,request):
 
@@ -46,4 +56,5 @@ class Register(APIView):
                 'access': str(token.access_token),}, status=200)
 
         else:
-            return Response({'error': 'Credenciales inválidas'}, status=401)'''
+            return Response({'error': 'Credenciales inválidas'}, status=401)"""
+

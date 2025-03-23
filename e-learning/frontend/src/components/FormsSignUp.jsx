@@ -1,5 +1,5 @@
 import React from "react";
-import { useForm, SubmitHandler } from "react-hook-form";
+import { useForm } from "react-hook-form";
 
 const RegistrationForm = () => {
   const {
@@ -9,9 +9,26 @@ const RegistrationForm = () => {
     watch,
   } = useForm();
 
-  const onSubmit = (data) => {
-    console.log(data); // Aquí puedes manejar el envío de los datos
+  const onSubmit = async (data) => {
+    try {
+      const response = await fetch("/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        alert("Registro exitoso");
+      } else {
+        alert("Error en el registro");
+      }
+    } catch (error) {
+      alert("Error en la conexión");
+    }
   };
+
 
   return (
     <section className="bg-white dark:bg-gray-900">
@@ -47,11 +64,25 @@ const RegistrationForm = () => {
                 <input
                   type="text"
                   placeholder="John"
-                  {...register("firstName", { required: "Este campo es obligatorio" })}
+                  {...register("firstName",
+                    {
+                      required: {
+                        value: true,
+                        message: "Este campo es requerido"
+                      },
+                      minLength: {
+                        value: 2,
+                        message: "El nombre debe tener mas de dos caracteres"
+                      },
+                      maxLength: {
+                        value: 20,
+                        message: "El nombre es demasiado largo"
+                      }
+                    })}
                   className="block w-full px-5 py-3 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"
                 />
                 {errors.firstName && (
-                  <p className="text-red-500 text-sm mt-1">
+                  <p role="alert" className="text-red-500 text-sm mt-1">
                     {errors.firstName.message}
                   </p>
                 )}
@@ -75,6 +106,56 @@ const RegistrationForm = () => {
                 )}
               </div>
 
+              {/* Campo cedula */}
+              <div>
+                <label className="block mb-2 text-sm text-gray-600 dark:text-gray-200">
+                  Cedula
+                </label>
+                <input
+                  type="text"
+                  placeholder="Cedula"
+                  {...register("cedula",
+                    {
+                      required: {
+                        value: true,
+                        message: "Este campo es requerido"
+                      },
+                      pattern: {
+                        value: /^\d{7,8}$/,
+                        message: "La cedula deve tener entre 7 y 8 caracteres y solo contener numeros"
+                      },
+                      maxLength: {
+                        value: 11,
+                        message: "El numero de cedula es demasiado largo"
+                      }
+                    })}
+                  className="block w-full px-5 py-3 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"
+                />
+                {errors.cedula && (
+                  <p role="alert" className="text-red-500 text-sm mt-1">
+                    {errors.cedula.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Campo Nickname */}
+              <div>
+                <label className="block mb-2 text-sm text-gray-600 dark:text-gray-200">
+                  Nombre de usuario
+                </label>
+                <input
+                  type="text"
+                  placeholder="Snow"
+                  {...register("nickName", { required: "Este campo es obligatorio" })}
+                  className="block w-full px-5 py-3 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"
+                />
+                {errors.nickName && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.nickName.message}
+                  </p>
+                )}
+              </div>
+
               {/* Campo Telefono */}
               <div>
                 <label className="block mb-2 text-sm text-gray-600 dark:text-gray-200">
@@ -86,8 +167,8 @@ const RegistrationForm = () => {
                   {...register("phone", {
                     required: "Este campo es obligatorio",
                     pattern: {
-                      value: /^\d{3}-\d{2}-\d{4}-\d{3}$/,
-                      message: "Formato inválido (XXX-XX-XXXX-XXX)",
+                      value: /^\d{4}\d{3}\d{2}\d{2}$/,
+                      message: "Formato inválido (XXXX-XXX-XX-XX)",
                     },
                   })}
                   className="block w-full px-5 py-3 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"
@@ -122,6 +203,35 @@ const RegistrationForm = () => {
                   </p>
                 )}
               </div>
+
+              {/* Campo fecha naciemiento */}
+              <div>
+                <label className="block mb-2 text-sm text-gray-600 dark:text-gray-200">
+                  Fecha de naciemiento
+                </label>
+                <input
+                  type="date"
+                  placeholder="01/01/2000"
+                  {...register("birthDate", {
+                    required: {
+                      value: true,
+                      message: "Este campo es requerido"
+                    },
+                    validate: (value) => {
+                      const birthDate = new Date(value);
+                      const today = new Date();
+                      return birthDate <= today || "La fecha de naciemiento no puede ser futura";
+                    },
+                  })}
+                  className="block w-full px-5 py-3 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"
+                />
+                {errors.birthDate && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.birthDate.message}
+                  </p>
+                )}
+              </div>
+
               {/* Campo Contraseña */}
               <div>
                 <label className="block mb-2 text-sm text-gray-600 dark:text-gray-200">
