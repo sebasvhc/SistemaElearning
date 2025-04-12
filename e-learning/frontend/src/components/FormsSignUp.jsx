@@ -18,13 +18,13 @@ const RegistrationForm = () => {
         credentials: 'include'
       });
       const csrfData = await csrfResponse.json();
-      const csrfToken = csrfData.csrfTokenoken;
+      const csrfToken = csrfData.csrfToken;
 
-      const response = await fetch("http://127.0.0.1:8000/api/register", {
+      const response = await fetch("http://127.0.0.1:8000/api/register/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRFToken": csrfData.csrfToken,
+          "X-CSRFToken": csrfToken,
         },
         credentials: 'include',
         body: JSON.stringify(data),
@@ -33,10 +33,14 @@ const RegistrationForm = () => {
       if (response.ok) {
         const response = await response.json();
         alert("Registro exitoso");
-        localStorage.setItem('accesToken', responseData.tokens.access);
+
+        // Guardar los tokens en local localStorage 
+        localStorage.setItem('accessToken', responseData.tokens.access);
         localStorage.setItem('refreshToken', responseData.tokens.refresh);
+
         {/* redirigir al usuario */ }
         window.location.href = '/dashboard';
+
       } else {
         const errorData = await response.json();
         alert(`Error en el registro: ${errorData.message}`);
