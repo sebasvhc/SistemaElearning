@@ -11,24 +11,41 @@ const RegistrationForm = () => {
 
   const onSubmit = async (data) => {
     try {
-      const response = await fetch("/api/register", {
+
+      {/* obteniendo el token CSRF*/ }
+      const csrfResponse = await fetch("http://127.0.0.1:8000/api/csrf_token/", {
+        method: 'GET',
+        credentials: 'include'
+      });
+      const csrfData = await csrfResponse.json();
+      const csrfToken = csrfData.csrfTokenoken;
+
+      const response = await fetch("http://127.0.0.1:8000/api/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-CSRFToken": csrfData.csrfToken,
         },
+        credentials: 'include',
         body: JSON.stringify(data),
       });
 
       if (response.ok) {
+        const response = await response.json();
         alert("Registro exitoso");
+        localStorage.setItem('accesToken', responseData.tokens.access);
+        localStorage.setItem('refreshToken', responseData.tokens.refresh);
+        {/* redirigir al usuario */ }
+        window.location.href = '/dashboard';
       } else {
-        alert("Error en el registro");
+        const errorData = await response.json();
+        alert(`Error en el registro: ${errorData.message}`);
       }
     } catch (error) {
-      alert("Error en la conexión");
+      alert("Error en la conexion");
+      console.error("Error:", error)
     }
   };
-
 
   return (
     <section className="bg-white dark:bg-gray-900">
@@ -145,8 +162,7 @@ const RegistrationForm = () => {
                 </label>
                 <input
                   type="text"
-                  placeholder="Snow"
-                  {...register("nickName", { required: "Este campo es obligatorio" })}
+                  placeholder="Snow"                  {...register("nickName", { required: "Este campo es obligatorio" })}
                   className="block w-full px-5 py-3 mt-2 text-gray-700 placeholder-gray-400 bg-white border border-gray-200 rounded-md dark:placeholder-gray-600 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:border-blue-400 dark:focus:border-blue-400 focus:ring-blue-400 focus:outline-none focus:ring focus:ring-opacity-40"
                 />
                 {errors.nickName && (
