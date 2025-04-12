@@ -27,11 +27,12 @@ class UsuarioManager(BaseUserManager):
 
 
 class Usuario(AbstractBaseUser, PermissionsMixin):
-    cedula = models.CharField(max_length=9, unique=True)
+    cedula = models.CharField(max_length=10, unique=True)
+    telefono = models.CharField(max_length=15, default="")
     username = models.CharField(max_length=150, unique=True)
     nombres = models.CharField(max_length=40)
     apellidos = models.CharField(max_length=40)
-    f_nacimiento = models.DateField(null=True, blank=True)
+    fecha_nacimiento = models.DateField()
     f_registro = models.DateField(auto_now_add=True)
     email = models.EmailField(unique=True)
     is_active = models.BooleanField(default=True)
@@ -44,4 +45,3 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.username
-

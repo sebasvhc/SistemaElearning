@@ -1,16 +1,18 @@
-from .models import Usuario
-from rest_framework import serializers
+from rest_framework.serializers import serializers
+from . import models
 
 
-class UsuarioSerializer(serializers.ModelSerializer):
+class UsuariosSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Usuario
+        model = models.Usuarios
         fields = [
-            "cedula",
+            "id",
             "username",
-            "nombres",
-            "apellidos",
-            "f_nacimiento",
             "email",
+            "first_name",
+            "last_name",
+            "cedual",
+            "telefono",
+            "fecha_nacimiento",
         ]
-
+        extra_kwargs = {"password": {"write_only": True}}
