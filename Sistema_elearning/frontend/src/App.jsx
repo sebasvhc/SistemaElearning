@@ -1,10 +1,17 @@
-// src/App.jsx
-import { Router } from './routes/Router'
+import { Routes, Route } from 'react-router-dom';
+import HomePage from './pages/HomePage';
+import Dashboard from './pages/Dashboard';
+import Login from './pages/Login';
 
-function App() {
+// 1. Asegúrate que la función lleve 'export default' directamente
+export default function App() {
   return (
-    <div className="app">
-      <Router /> {/* Aquí se renderizan todas las rutas */}
-    </div>
-  )
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/login" element={<Login />} />
+    </Routes>
+  );
 }
+
+// 2. NO añadas otro export default aquí

@@ -1,18 +1,19 @@
 // src/routes/Router.jsx
-import { Routes, Route } from 'react-router-dom'
-import Login from '../pages/Login'
-import Dashboard from '../pages/Dashboard'
-import { PrivateRoute } from '../components/PrivateRoute'
+import { Routes, Route, Navigate } from 'react-router-dom';
+import Login from '../pages/Login';
+import Dashboard from '../pages/Dashboard';
+import { PrivateRoute } from '../components/PrivateRoute';
 
-export const Router = () => {
+export const AppRouter = () => {
   return (
     <Routes>
       {/* Ruta pública */}
+      <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<Login />} />
       
       {/* Ruta protegida */}
       <Route 
-        path="/dashboard" 
+        path="/dashboard/*"  // El /* permite rutas anidadas
         element={
           <PrivateRoute>
             <Dashboard />
@@ -20,8 +21,9 @@ export const Router = () => {
         } 
       />
       
-      {/* Ruta por defecto (redirección) */}
+      {/* Redirecciones */}
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
-  )
-}
+  );
+};

@@ -1,16 +1,15 @@
-import api from './api';
+// src/api/auth.js
+import api from './config';
 
-export const login = async (credentials) => {
-  try {
-    const response = await api.post('/token/', credentials);
-    localStorage.setItem('token', response.data.access); // Guarda el token
-    return response.data;
-  } catch (error) {
-    console.error('Login error:', error.response?.data);
-    throw error;
-  }
+export const login = async (email, password) => {
+  const response = await api.post('/users/login/', { email, password });
+  return {
+    token: response.data.token,
+    userData: response.data.user // Asegúrate que el backend devuelva esto
+  };
 };
 
-export const logout = () => {
-  localStorage.removeItem('token');
+export const register = async (userData) => {
+  const response = await api.post('/users/register/', userData);
+  return response.data;
 };
