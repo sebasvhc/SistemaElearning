@@ -44,5 +44,3 @@ export default function Dashboard() {
   );
 }
 
-// Elimina esto si lo tienes:
-// export default Dashboard;

@@ -3,7 +3,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom' // Importa el Router
 import App from './App' // Componente padre (opcional)
-import AuthProvider from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import './index.css';
 

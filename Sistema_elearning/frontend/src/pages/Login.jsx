@@ -4,32 +4,25 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { login } = useContext(AuthContext);
-  const navigate = useNavigate();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const { login } = useContext(AuthContext);
+    const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await login({ email, password });
+            navigate(user?.role === 'teacher' ? '/teacher-dashboard' : '/student-dashboard');
+        } catch (error) {
+            setError('Credenciales incorrectas');
+        }
+    };
 
-    const { success, error } = await login(email, password);
-
-    
-    if (success) {
-      navigate('/dashboard');
-    } else {
-      setError(error || 'Credenciales incorrectas');
-    }
-
-    setIsLoading(false);
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
         <h2 className="text-3xl font-extrabold text-center text-gray-900">
           Iniciar sesión
@@ -82,5 +75,5 @@ export default function Login() {
         </form>
       </div>
     </div>
-  );
+    );
 }

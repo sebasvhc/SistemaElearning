@@ -1,9 +1,16 @@
+from django.conf import settings
 from django.db import models
 
-class Course(models.Model):
-	title = models.CharField(max_length=100)
-	description = models.TextField()
+# Usa esto para las relaciones ForeignKey
+User = settings.AUTH_USER_MODEL
 
-class Module(models.Model):
-	course = models.ForeignKey(Course, on_delete=models.CASCADE)
-	title = models.CharField(max_length=100)
+
+class Course(models.Model):
+    title = models.CharField(max_length=200)
+    teacher = models.ForeignKey(
+    User,
+    on_delete=models.CASCADE,
+    limit_choices_to={'role': 'teacher'},
+    null=False  # Ahora es requerido
+)
+

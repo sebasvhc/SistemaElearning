@@ -140,6 +140,9 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+AUTH_USER_MODEL = 'users.User'  # Debe estar en mayúsculas
+
+
 
 # Tiempo de vida personalizado del token
 

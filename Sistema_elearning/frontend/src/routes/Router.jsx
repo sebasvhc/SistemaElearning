@@ -1,29 +1,43 @@
-// src/routes/Router.jsx
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import HomePage from '../pages/HomePage';
 import Login from '../pages/Login';
-import Dashboard from '../pages/Dashboard';
-import { PrivateRoute } from '../components/PrivateRoute';
+import Register from '../pages/Register';
+import TeacherDashboard from '../pages/TeacherDashboard';
+import StudentDashboard from '../pages/StudentDashboard';
 
-export const AppRouter = () => {
+const Router = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) return <div>Cargando...</div>;
+
   return (
     <Routes>
-      {/* Ruta pública */}
+      {/* Rutas públicas */}
       <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<Login />} />
-      
-      {/* Ruta protegida */}
-      <Route 
-        path="/dashboard/*"  // El /* permite rutas anidadas
+      <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
+      <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
+
+      {/* Rutas protegidas */}
+      <Route
+        path="/dashboard"
         element={
-          <PrivateRoute>
-            <Dashboard />
-          </PrivateRoute>
-        } 
+          user ? (
+            user.role === 'teacher' ? (
+              <TeacherDashboard />
+            ) : (
+              <StudentDashboard />
+            )
+          ) : (
+            <Navigate to="/login" />
+          )
+        }
       />
-      
-      {/* Redirecciones */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+
+      {/* Redirección para rutas no encontradas */}
+      <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
 };
+
+export default Router;
