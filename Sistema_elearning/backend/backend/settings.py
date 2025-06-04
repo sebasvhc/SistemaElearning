@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+#from .logging_config import LOGGING
 #from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -64,9 +65,22 @@ CORS_ALLOW_CREDENTIALS = True  # Para cookies/tokens
 # JWT, agregando autenticación
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',  # ¡Sin "h"!
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  
     ),
 }
+
+AUTHENTICATION_BACKENDS = [
+    'users.backends.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+SIMPLE_JWT = {
+    'USER_ID_FIELD': 'email',  # Usar email como identificador
+    'USER_ID_CLAIM': 'email',
+}
+
+
+
 
 ROOT_URLCONF = 'backend.urls'
 

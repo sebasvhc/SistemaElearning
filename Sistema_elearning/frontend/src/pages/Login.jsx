@@ -14,10 +14,22 @@ export default function Login() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await login({ email, password });
-            navigate(user?.role === 'teacher' ? '/teacher-dashboard' : '/student-dashboard');
+            const response = await axios.post(
+                'http://localhost:8000/api/token/', {
+                    username: email, // Django espera 'username' aunque uses email
+                    password: password
+                }, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            // Guarda el token
+            localStorage.setItem('token', response.data.access);
+            navigate('/dashboard');
         } catch (error) {
-            setError('Credenciales incorrectas');
+            setError(error.response ? .data ? .detail || 'Credenciales incorrectas');
         }
     };
 
