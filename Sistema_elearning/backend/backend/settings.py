@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'users',
     'courses',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
@@ -75,11 +76,10 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 SIMPLE_JWT = {
+    'TOKEN_OBTAIN_SERIALIZER': 'serializers.CustomTokenObtainPairSerializer',  # Ruta a tu serializer
     'USER_ID_FIELD': 'email',  # Usar email como identificador
     'USER_ID_CLAIM': 'email',
 }
-
-
 
 
 ROOT_URLCONF = 'backend.urls'

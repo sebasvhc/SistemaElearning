@@ -1,40 +1,41 @@
-// src/pages/Login.jsx
 import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import axios from 'axios';
 
 export default function Login() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const { login } = useContext(AuthContext);
-    const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const response = await axios.post(
-                'http://localhost:8000/api/token/', {
-                    username: email, // Django espera 'username' aunque uses email
-                    password: password
-                }, {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const response = await axios.post(
+        'http://localhost:8000/api/token/',
+        { email, password }
+      );
+      localStorage.setItem('token', response.data.access);
+      navigate('/dashboard');
+    } catch (error) {
+      const errorData = error.response?.data;
+      const errorMessage =
+        errorData?.email?.[0] ||
+        errorData?.password?.[0] ||
+        errorData?.detail ||
+        'Credenciales incorrectas';
+      setError(errorMessage.toString());
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-            // Guarda el token
-            localStorage.setItem('token', response.data.access);
-            navigate('/dashboard');
-        } catch (error) {
-            setError(error.response ? .data ? .detail || 'Credenciales incorrectas');
-        }
-    };
-
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-md">
         <h2 className="text-3xl font-extrabold text-center text-gray-900">
           Iniciar sesión
@@ -87,5 +88,5 @@ export default function Login() {
         </form>
       </div>
     </div>
-    );
-}
+  );
+} // <-- Esta es la llave de cierre que probablemente faltaba
