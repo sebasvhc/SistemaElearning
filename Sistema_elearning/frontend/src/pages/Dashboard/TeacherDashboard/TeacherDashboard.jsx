@@ -1,9 +1,9 @@
 // pages/TeacherDashboard.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchTeacherCourses } from '../api/courses';
-import Sidebar from '../components/teacher/Sidebar';
-import Header from '../components/teacher/Header';
+import { fetchTeacherCourses } from '../../../api/courses';
+import Sidebar from '../../../components/teacher/Sidebar';
+import Header from '../../../components/teacher/Header';
 
 export default function TeacherDashboard() {
   const [courses, setCourses] = useState([]);

@@ -1,9 +1,32 @@
-// src/components/PrivateRoute.jsx
-import { useContext } from 'react';
 import { Navigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+import PropTypes from 'prop-types';
 
-export const PrivateRoute = ({ children }) => {
-  const { user } = useContext(AuthContext);
-  return user ? children : <Navigate to="/login" replace />;
+const PrivateRoute = ({ 
+  children, 
+  isAuthenticated, 
+  isAuthorized, 
+  unauthorizedRedirectTo 
+}) => {
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (!isAuthorized) {
+    return <Navigate to={unauthorizedRedirectTo} replace />;
+  }
+  
+  return children;
 };
+
+PrivateRoute.propTypes = {
+  children: PropTypes.node.isRequired,
+  isAuthenticated: PropTypes.bool.isRequired,
+  isAuthorized: PropTypes.bool.isRequired,
+  unauthorizedRedirectTo: PropTypes.string
+};
+
+PrivateRoute.defaultProps = {
+  unauthorizedRedirectTo: '/unauthorized'
+};
+
+export default PrivateRoute;

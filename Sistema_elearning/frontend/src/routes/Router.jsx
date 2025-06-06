@@ -1,43 +1,61 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import PrivateRoute from '../components/PrivateRoute';
 import HomePage from '../pages/HomePage';
-import Login from '../pages/Login';
-import Register from '../pages/Register';
-import TeacherDashboard from '../pages/TeacherDashboard';
-import StudentDashboard from '../pages/StudentDashboard';
+import Login from '../pages/auth/Login';
+import Register from '../pages/auth/Register';
+import StudentDashboard from '../pages/Dashboard/StudentDashboard/Dashboard';
+import TeacherDashboard from '../pages/Dashboard/TeacherDashboard/TeacherDashboard';
+import NotFound from '../pages/errors/NotFound';
+import Unauthorized from '../pages/errors/Unauthorized';
 
-const Router = () => {
-  const { user, loading } = useAuth();
 
-  if (loading) return <div>Cargando...</div>;
+export default function AppRoutes() {
+  const { user } = useAuth(); // Ahora usamos el user completo
 
   return (
     <Routes>
       {/* Rutas públicas */}
       <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
-      <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+
+      {/* Redirección automática post-login */}
+      <Route 
+        path="/dashboard" 
+        element={
+          <PrivateRoute>
+            {user?.role === 'teacher' ? (
+              <Navigate to="/teacher-dashboard" replace />
+            ) : (
+              <Navigate to="/student-dashboard" replace />
+            )}
+          </PrivateRoute>
+        } 
+      />
 
       {/* Rutas protegidas */}
       <Route
-        path="/dashboard"
+        path="/student-dashboard"
         element={
-          user ? (
-            user.role === 'teacher' ? (
-              <TeacherDashboard />
-            ) : (
-              <StudentDashboard />
-            )
-          ) : (
-            <Navigate to="/login" />
-          )
+          <PrivateRoute allowedRoles={['student']}>
+            <StudentDashboard />
+          </PrivateRoute>
+        }
+      />
+      
+      <Route
+        path="/teacher-dashboard"
+        element={
+          <PrivateRoute allowedRoles={['teacher', 'admin']}>
+            <TeacherDashboard />
+          </PrivateRoute>
         }
       />
 
-      {/* Redirección para rutas no encontradas */}
-      <Route path="*" element={<Navigate to="/" />} />
+      {/* Rutas de error */}
+      <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
-};
-
-export default Router;
+}

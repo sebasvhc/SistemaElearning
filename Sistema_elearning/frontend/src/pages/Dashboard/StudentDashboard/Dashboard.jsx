@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { fetchCourses } from '../api/courses';
+import { fetchTeacherCourses } from '../../../api/courses';
 import { Outlet } from 'react-router-dom';
 
 // Cambia esto:
 // function Dashboard() {
 // Por esto:
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 
 export default function Dashboard() {

@@ -68,3 +68,25 @@ class UserDetailView(RetrieveAPIView):
         return self.request.user
 
 
+class CurrentUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            user = request.user
+            data = {
+                'id': user.id,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'role': user.role,
+                'cedula': user.cedula,
+                'is_verified': user.is_verified
+            }
+            return Response(data)
+        except Exception as e:
+            print("Error en CurrentUserView:", str(e))  # Ver en consola Django
+            return Response(
+                {"error": "Error al obtener datos del usuario"}, 
+                status=500
+            )

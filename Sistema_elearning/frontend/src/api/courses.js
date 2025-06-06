@@ -1,11 +1,11 @@
 import api from './api';
 
-export const fetchCourses = async () => {
+export const fetchTeacherCourses = async () => {
   try {
-    const response = await api.get('/courses/');
+    const response = await axios.get('http://localhost:8000/api/teacher/courses/');
     return response.data;
   } catch (error) {
-    console.error('Error fetching courses:', error);
+    console.error('Error fetching teacher courses:', error);
     throw error;
   }
 };
