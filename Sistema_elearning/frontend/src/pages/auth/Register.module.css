@@ -1,0 +1,193 @@
+.registerContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f8f9fa;
+    padding: 20px;
+}
+
+.registerCard {
+    width: 100%;
+    max-width: 500px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    padding: 40px;
+}
+
+.title {
+    font-size: 28px;
+    color: #2d3748;
+    margin-bottom: 8px;
+    text-align: center;
+    font-weight: 700;
+}
+
+.subtitle {
+    color: #718096;
+    text-align: center;
+    margin-bottom: 32px;
+    font-size: 16px;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.inputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.inputGroup label {
+    font-size: 14px;
+    color: #4a5568;
+    font-weight: 600;
+}
+
+.inputGroup input,
+.inputGroup select {
+    padding: 12px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.inputGroup input:focus,
+.inputGroup select:focus {
+    outline: none;
+    border-color: #4299e1;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+}
+
+.nameContainer {
+    display: flex;
+    gap: 16px;
+}
+
+.nameContainer .inputGroup {
+    flex: 1;
+}
+
+.select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+}
+
+.submitButton {
+    background-color: #4299e1;
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 10px;
+}
+
+.submitButton:hover {
+    background-color: #3182ce;
+}
+
+.errorAlert {
+    background-color: #fff5f5;
+    color: #e53e3e;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    border: 1px solid #fed7d7;
+    margin-bottom: 16px;
+}
+
+.loginLink {
+    text-align: center;
+    color: #718096;
+    font-size: 14px;
+}
+
+.loginLink a {
+    color: #4299e1;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.loginLink a:hover {
+    text-decoration: underline;
+}
+
+.errorAlert {
+    background-color: #ffebee;
+    color: #c62828;
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.errorCloseButton {
+    background: none;
+    border: none;
+    color: #c62828;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 8px;
+}
+
+.hint {
+    display: block;
+    color: #666;
+    font-size: 0.8rem;
+    margin-top: 4px;
+}
+
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 8px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Estilos existentes... */
+
+
+.errorInput {
+    border-color: #ff4444 !important;
+}
+
+.errorText {
+    color: #ff4444;
+    font-size: 0.8rem;
+    margin-top: 4px;
+    display: block;
+}
+
+.inputGroup {
+    margin-bottom: 1rem;
+}
+
+.hint {
+    display: block;
+    color: #666;
+    font-size: 0.8rem;
+    margin-top: 4px;
+    font-style: italic;
+}
