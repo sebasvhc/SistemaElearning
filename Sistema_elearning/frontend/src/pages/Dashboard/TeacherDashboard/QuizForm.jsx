@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { createQuiz } from '../../api/quizzes';
+import { createQuiz } from '../../../api/quizzes';
 
 export default function QuizForm({ courseId, onSuccess }) {
   const { register, handleSubmit, formState: { errors } } = useForm();
