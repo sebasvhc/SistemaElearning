@@ -19,6 +19,14 @@ class UserManager(BaseUserManager):
 class User(AbstractUser):
     username = None  # Desactivamos el campo username
     email = models.EmailField(unique=True)
+    xp = models.IntegerField(default=0)
+    points = models.IntegerField(default=0)
+    level = models.IntegerField(default=1)
+    
+    def calculate_level(self):
+        # Lógica para calcular nivel basado en XP
+        self.level = self.xp // 1000
+        self.save()
     
     ROLES = (
         ('student', 'Estudiante'),

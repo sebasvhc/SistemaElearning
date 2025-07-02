@@ -10,7 +10,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer  # <-- Añade este
-from django.contrib.auth import get_user_model
+from .models import User
 
 
 User = get_user_model()
@@ -89,4 +89,23 @@ class CurrentUserView(APIView):
             return Response(
                 {"error": "Error al obtener datos del usuario"}, 
                 status=500
+            )
+
+class UserGamificationView(RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, *args, **kwargs):
+        try:
+            user = request.user
+            response_data = {
+                'xp': getattr(user, 'xp', 0),
+                'level': getattr(user, 'level', 1),
+                'badges': list(user.badges.all().values_list('name', flat=True)) if hasattr(user, 'badges') else [],
+                'points': getattr(user, 'points', 0)
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

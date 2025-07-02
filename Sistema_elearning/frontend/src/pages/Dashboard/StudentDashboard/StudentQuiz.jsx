@@ -1,172 +1,246 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getQuizById, submitQuizAnswers } from '../../api/quizzes';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../../context/AuthContext';
+import { getQuizDetails, submitQuizAnswers } from '../../../api/quizzes';
+import LoadingSpinner from '../../../components/common/LoadingSpinner';
+
 
 export default function StudentQuiz() {
-  const { quizId } = useParams();
-  const { user, updateUserXP } = useAuth();
-  const navigate = useNavigate();
-  const [quiz, setQuiz] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [answers, setAnswers] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState(null);
+    const { quizId } = useParams();
+    const { user, updateUserXP } = useAuth();
+    const navigate = useNavigate();
+    
+    const [quiz, setQuiz] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [answers, setAnswers] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [results, setResults] = useState(null);
 
-  useEffect(() => {
-    const loadQuiz = async () => {
-      try {
-        setLoading(true);
-        const data = await getQuizById(quizId);
-        setQuiz(data);
-        
-        // Inicializar respuestas vacías
-        const initialAnswers = {};
-        data.questions.forEach((q, i) => {
-          initialAnswers[i] = '';
-        });
-        setAnswers(initialAnswers);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
+    useEffect(() => {
+        const loadQuiz = async () => {
+            try {
+                setLoading(true);
+                const data = await getQuizDetails(quizId);
+                setQuiz(data);
+                
+                // Inicializar respuestas vacías
+                const initialAnswers = {};
+                data.questions.forEach((q, index) => {
+                    initialAnswers[index] = '';
+                });
+                setAnswers(initialAnswers);
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadQuiz();
+    }, [quizId]);
+
+    const handleAnswerChange = (questionIndex, value) => {
+        setAnswers(prev => ({
+            ...prev,
+            [questionIndex]: value
+        }));
     };
 
-    loadQuiz();
-  }, [quizId]);
-
-  const handleAnswerChange = (questionIndex, option) => {
-    setAnswers(prev => ({
-      ...prev,
-      [questionIndex]: option
-    }));
-  };
-
-  const handleSubmit = async () => {
-    const unanswered = Object.values(answers).some(a => !a);
-    if (unanswered) {
-      alert('Por favor responde todas las preguntas');
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const submission = quiz.questions.map((q, i) => ({
-        question_id: q.id,
-        answer: answers[i]
-      }));
-
-      const response = await submitQuizAnswers(quizId, submission);
-      setResult(response);
-      
-      // Actualizar XP del usuario
-      if (response.xp_earned) {
-        await updateUserXP(response.xp_earned);
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  if (loading) {
-    return <div className="text-center py-8">Cargando quiz...</div>;
-  }
-
-  if (error) {
-    return <div className="text-red-500 text-center py-8">{error}</div>;
-  }
-
-  if (result) {
-    return (
-      <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold mb-4">Resultados del Quiz</h2>
-        <div className={`p-4 rounded-lg mb-6 ${result.passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-          <p className="font-bold">{result.passed ? '¡Felicidades! Aprobaste' : 'No aprobaste esta vez'}</p>
-          <p>Puntaje: {result.score}% (Se necesitaba {quiz.passing_score}%)</p>
-          {result.xp_earned && <p>Ganaste {result.xp_earned} XP</p>}
-          {result.new_badge && <p className="font-medium">¡Nueva insignia desbloqueada: {result.new_badge}!</p>}
-        </div>
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
         
-        <div className="space-y-6">
-          {quiz.questions.map((q, qIndex) => {
-            const userAnswer = answers[qIndex];
-            const isCorrect = userAnswer === q.correct_answer;
-            
-            return (
-              <div key={qIndex} className="border rounded-lg p-4">
-                <p className="font-medium mb-2">{q.text}</p>
-                <div className="space-y-2">
-                  {q.options.map((option, oIndex) => (
-                    <div key={oIndex} className={`p-2 border rounded ${option === q.correct_answer ? 'bg-green-50 border-green-200' : option === userAnswer && !isCorrect ? 'bg-red-50 border-red-200' : ''}`}>
-                      {option}
-                      {option === q.correct_answer && <span className="ml-2 text-green-600">✓ Respuesta correcta</span>}
-                      {option === userAnswer && !isCorrect && <span className="ml-2 text-red-600">✗ Tu respuesta</span>}
-                    </div>
-                  ))}
+        try {
+            // Preparar respuestas para enviar
+            const formattedAnswers = quiz.questions.map((q, index) => ({
+                question_id: q.id,
+                answer: answers[index] || ''
+            }));
+
+            const submissionResult = await submitQuizAnswers(quizId, formattedAnswers);
+            setResults(submissionResult);
+
+            // Actualizar XP del estudiante
+            if (submissionResult.xp_earned) {
+                await updateUserXP(submissionResult.xp_earned);
+            }
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (loading) {
+        return <LoadingSpinner fullScreen />;
+    }
+
+    if (error) {
+        return (
+            <div className="max-w-7xl mx-auto p-6">
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg">
+                    <p className="font-medium text-red-700">{error}</p>
+                    <button 
+                        onClick={() => window.location.reload()}
+                        className="mt-2 text-sm bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded-lg"
+                    >
+                        Reintentar
+                    </button>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-        
-        <button
-          onClick={() => navigate(`/course/${quiz.course.id}`)}
-          className="mt-6 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          Volver al curso
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-2">{quiz.title}</h2>
-      <p className="text-gray-600 mb-6">Curso: {quiz.course.title}</p>
-      
-      <div className="mb-6 p-3 bg-blue-50 rounded-lg">
-        <p className="font-medium">Instrucciones:</p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>Responde todas las preguntas</li>
-          <li>Necesitas al menos {quiz.passing_score}% para aprobar</li>
-          <li>Puedes ganar hasta {quiz.gamification.points_per_question * quiz.questions.length} puntos</li>
-          {quiz.gamification.badge_name && <li>Insignia: {quiz.gamification.badge_name}</li>}
-        </ul>
-      </div>
-      
-      <div className="space-y-8">
-        {quiz.questions.map((q, qIndex) => (
-          <div key={qIndex} className="border-b pb-6">
-            <p className="font-medium mb-3">{qIndex + 1}. {q.text}</p>
-            <div className="space-y-2">
-              {q.options.map((option, oIndex) => (
-                <label key={oIndex} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                  <input
-                    type="radio"
-                    name={`question-${qIndex}`}
-                    checked={answers[qIndex] === option}
-                    onChange={() => handleAnswerChange(qIndex, option)}
-                    className="h-4 w-4"
-                  />
-                  <span>{option}</span>
-                </label>
-              ))}
             </div>
-          </div>
-        ))}
-      </div>
-      
-      <button
-        onClick={handleSubmit}
-        disabled={submitting}
-        className={`mt-6 w-full py-3 rounded text-white font-medium ${submitting ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'}`}
-      >
-        {submitting ? 'Enviando...' : 'Enviar Respuestas'}
-      </button>
-    </div>
-  );
+        );
+    }
+
+    return (
+        <div className="max-w-7xl mx-auto p-6">
+            {results ? (
+                <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Resultados del Quiz</h2>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                            <p className="text-sm text-blue-600 font-medium">Puntuación</p>
+                            <p className="text-3xl font-bold text-blue-800">
+                                {results.score}%
+                            </p>
+                        </div>
+                        
+                        <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+                            <p className="text-sm text-green-600 font-medium">Respuestas correctas</p>
+                            <p className="text-3xl font-bold text-green-800">
+                                {results.correct_answers} / {quiz.questions.length}
+                            </p>
+                        </div>
+                        
+                        <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                            <p className="text-sm text-purple-600 font-medium">XP Ganada</p>
+                            <p className="text-3xl font-bold text-purple-800">
+                                {results.xp_earned || 0}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {results.passed ? (
+                        <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-r-lg">
+                            <p className="font-medium text-green-700">¡Felicidades! Has aprobado este quiz.</p>
+                            {results.badge_earned && (
+                                <p className="mt-2 text-green-600">
+                                    Has ganado la insignia: <span className="font-bold">{results.badge_earned}</span>
+                                </p>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6 rounded-r-lg">
+                            <p className="font-medium text-yellow-700">
+                                No has alcanzado el puntaje mínimo para aprobar ({quiz.passing_score}% requerido).
+                            </p>
+                        </div>
+                    )}
+                    
+                    <div className="mt-6">
+                        <h3 className="text-xl font-semibold text-gray-800 mb-4">Detalle de respuestas</h3>
+                        <div className="space-y-4">
+                            {quiz.questions.map((question, qIndex) => {
+                                const userAnswer = answers[qIndex];
+                                const isCorrect = results.question_results[qIndex].is_correct;
+                                
+                                return (
+                                    <div 
+                                        key={qIndex} 
+                                        className={`p-4 rounded-lg border ${
+                                            isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+                                        }`}
+                                    >
+                                        <p className="font-medium text-gray-800">
+                                            {qIndex + 1}. {question.text}
+                                        </p>
+                                        
+                                        <div className="mt-2">
+                                            <p className="text-sm text-gray-600">
+                                                <span className="font-medium">Tu respuesta:</span> {userAnswer || '(Sin responder)'}
+                                            </p>
+                                            {!isCorrect && (
+                                                <p className="text-sm text-gray-600 mt-1">
+                                                    <span className="font-medium">Respuesta correcta:</span> {question.correct_answer}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    
+                    <div className="mt-6 flex justify-end">
+                        <button
+                            onClick={() => navigate('/dashboard')}
+                            className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium"
+                        >
+                            Volver al Dashboard
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                    <div className="mb-6">
+                        <h2 className="text-2xl font-bold text-gray-800 mb-1">{quiz.title}</h2>
+                        <p className="text-gray-600">{quiz.description}</p>
+                        <div className="mt-4 flex items-center space-x-4">
+                            <span className="bg-indigo-100 text-indigo-800 text-xs px-2.5 py-1 rounded-full font-medium">
+                                {quiz.questions.length} {quiz.questions.length === 1 ? 'pregunta' : 'preguntas'}
+                            </span>
+                            <span className="bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-full font-medium">
+                                {quiz.passing_score}% para aprobar
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div className="space-y-6">
+                        {quiz.questions.map((question, qIndex) => (
+                            <div key={qIndex} className="border border-gray-200 p-4 rounded-lg">
+                                <p className="font-medium text-gray-800 mb-3">
+                                    {qIndex + 1}. {question.text}
+                                </p>
+                                
+                                <div className="space-y-2">
+                                    {question.options.map((option, oIndex) => (
+                                        <div key={oIndex} className="flex items-center">
+                                            <input
+                                                type="radio"
+                                                id={`q${qIndex}-o${oIndex}`}
+                                                name={`question-${qIndex}`}
+                                                value={option}
+                                                checked={answers[qIndex] === option}
+                                                onChange={() => handleAnswerChange(qIndex, option)}
+                                                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                                            />
+                                            <label 
+                                                htmlFor={`q${qIndex}-o${oIndex}`}
+                                                className="ml-3 block text-gray-700"
+                                            >
+                                                {option}
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    
+                    <div className="mt-8 flex justify-end">
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className={`px-6 py-3 rounded-lg font-medium text-white ${
+                                isSubmitting ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'
+                            }`}
+                        >
+                            {isSubmitting ? 'Enviando...' : 'Enviar Quiz'}
+                        </button>
+                    </div>
+                </form>
+            )}
+        </div>
+    );
 }

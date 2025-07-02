@@ -8,10 +8,10 @@ import StudentDashboard from '../pages/Dashboard/StudentDashboard/StudentDashboa
 import TeacherDashboard from '../pages/Dashboard/TeacherDashboard/TeacherDashboard';
 import NotFound from '../pages/errors/NotFound';
 import Unauthorized from '../pages/errors/Unauthorized';
-
+import StudentQuiz from '../pages/Dashboard/StudentDashboard/StudentQuiz';
 
 export default function AppRoutes() {
-  const { user } = useAuth(); // Ahora usamos el user completo
+  const { user } = useAuth();
 
   return (
     <Routes>
@@ -19,6 +19,7 @@ export default function AppRoutes() {
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/unauthorized" element={<Unauthorized />} />
 
       {/* Redirección automática post-login */}
       <Route 
@@ -34,7 +35,7 @@ export default function AppRoutes() {
         } 
       />
 
-      {/* Rutas protegidas */}
+      {/* Rutas de estudiante */}
       <Route
         path="/student-dashboard"
         element={
@@ -45,6 +46,25 @@ export default function AppRoutes() {
       />
       
       <Route
+        path="/student-dashboard/quiz/:quizId"
+        element={
+          <PrivateRoute allowedRoles={['student']}>
+            <StudentQuiz />
+          </PrivateRoute>
+        }
+      />
+      
+      {/* <Route
+        path="/student-dashboard/course/:courseId"
+        element={
+          <PrivateRoute allowedRoles={['student']}>
+            <CourseDetails /> 
+          </PrivateRoute>
+        }
+      /> */}
+
+      {/* Rutas de profesor */}
+      <Route
         path="/teacher-dashboard"
         element={
           <PrivateRoute allowedRoles={['teacher', 'admin']}>
@@ -53,8 +73,7 @@ export default function AppRoutes() {
         }
       />
 
-      {/* Rutas de error */}
-      <Route path="/unauthorized" element={<Unauthorized />} />
+      {/* Rutas de error - debe ser la última */}
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

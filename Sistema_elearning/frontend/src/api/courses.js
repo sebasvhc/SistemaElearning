@@ -1,72 +1,75 @@
-// src/api/courses.js
+// api/courses.js
 import api from './api';
 
-// Función para obtener cursos del profesor
 export const fetchTeacherCourses = async () => {
     try {
-        const response = await api.get('/courses/teacher/'); // Asegúrate que coincida con tu backend
+        const response = await api.get('/courses/teacher/');
         return response.data;
     } catch (error) {
-        if (error.response?.status === 404) {
-            console.error('Verifica que:');
-            console.error('1. La URL en el backend sea exactamente /api/courses/teacher/');
-            console.error('2. El servidor Django se haya reiniciado después de los cambios');
-            throw new Error('La ruta no existe.');
+        console.error('Error fetching teacher courses:', error);
+        if (error.response?.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
         }
         throw error;
     }
 };
-// Función para obtener cursos del estudiante (AÑADE ESTA FUNCIÓN)
+
+
 export const fetchStudentCourses = async () => {
+  try {
+    // Usa la ruta exacta que aparece en tu backend
+    const response = await api.get('/student-courses/');
+    return response.data;
+  } catch (error) {
+    console.error('Error en fetchStudentCourses:', {
+      status: error.response?.status,
+      message: error.message,
+      url: error.config?.url,
+      responseData: error.response?.data
+    });
+    
+    let errorMessage = 'Error al cargar los cursos';
+    if (error.response?.status === 404) {
+      errorMessage = 'Endpoint no encontrado. Verifica la conexión con el backend';
+    } else if (error.response?.status === 401) {
+      errorMessage = 'No autorizado. Por favor inicia sesión nuevamente';
+    }
+    
+    throw new Error(errorMessage);
+  }
+};
+
+export const createCourse = async (courseData) => {
     try {
-        const response = await api.get('/student/courses/');
+        const response = await api.post('/courses/', courseData);
         return response.data;
     } catch (error) {
-        console.error('Error fetching student courses:', error);
+        console.error('Error creating course:', error);
+        if (error.response?.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        }
         throw error;
     }
 };
 
-// Función para crear cursos
-export const createCourse = async (courseData) => {
-  try {
-    const response = await api.post('/courses/', courseData, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}` // Doble verificación
-      }
-    });
-    return response.data;
-  } catch (error) {
-    if (error.response?.status === 401) {
-      // Redirigir a login si el token es inválido
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    }
-    throw error;
-  }
-};
-
-// Función para manejar errores
-export const handleApiError = (error) => {
-    if (error.response) {
-        return {
-            message: error.response.data.message || 'Error en la solicitud',
-            status: error.response.status,
-            data: error.response.data
-        };
-    } else if (error.request) {
-        return { message: 'No se recibió respuesta del servidor' };
-    } else {
-        return { message: error.message || 'Error al configurar la solicitud' };
-    }
-};
-
-export const createQuiz = async (quizData) => {
+export const enrollStudentInCourse = async (courseId, studentId) => {
     try {
-        const response = await api.post('/quizzes/', quizData);
+        const response = await api.post(`/courses/${courseId}/enroll/`, { student_id: studentId });
         return response.data;
     } catch (error) {
-        console.error('Error creating quiz:', error);
-        throw error; // Asegúrate de propagar el error para manejarlo en el componente.  
+        console.error('Error enrolling student:', error);
+        throw error;
+    }
+};
+
+export const getCourseDetails = async (courseId) => {
+    try {
+        const response = await api.get(`/courses/${courseId}/`);
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching course details:', error);
+        throw error;
     }
 };
