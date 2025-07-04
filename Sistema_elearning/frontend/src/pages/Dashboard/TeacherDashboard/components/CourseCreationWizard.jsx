@@ -1,10 +1,17 @@
 import { useState } from 'react';
-import { Stepper, Step, StepLabel, Box } from "@mui/material";
-import CourseBasicInfo from "./CourseBasicInfo";
-import InstructionalObjectivesForm from "../forms/InstructionalObjectivesForm"; // Ruta actualizada
-import CourseMaterialsUpload from "../forms/CourseMaterialsUpload"; // Ruta actualizada
-import CourseEvaluations from "../forms/CreateQuizForm"; // Asumiendo que es el componente correcto
-import Button from "../../../../components/common/Button";
+import { Stepper, Step, StepLabel, Box } from '@mui/material';
+import CourseBasicInfo from './CourseBasicInfo';
+import InstructionalObjectivesForm from '../forms/InstructionalObjectivesForm';
+import CourseMaterialsUpload from '../forms/CourseMaterialsUpload';
+import CreateQuizForm from '../forms/CreateQuizForm';
+import Button from '../../../../components/common/Button';
+import {
+  PlusIcon,
+  TrashIcon,
+  PencilIcon,
+  CheckIcon,
+  ArrowLeftIcon
+} from '@heroicons/react/24/outline';
 
 const steps = [
   'Información Básica',
@@ -114,14 +121,14 @@ const CourseCreationWizard = ({ periods, teacherId, onSuccess, onCancel }) => {
         )}
         
         {activeStep === 3 && (
-          <CourseEvaluations 
+          <CreateQuizForm 
             quizzes={courseData.quizzes}
             updateQuizzes={(qz) => updateCourseData('quizzes', qz)}
             courseId={courseData.id}
           />
         )}
       </Box>
-      
+
       {errors.submit && (
         <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded-r-lg">
           <p>{errors.submit}</p>
@@ -135,6 +142,7 @@ const CourseCreationWizard = ({ periods, teacherId, onSuccess, onCancel }) => {
               onClick={handleBack}
               variant="outline"
               className="mr-4"
+              startIcon={<ArrowLeftIcon className="h-5 w-5" />}
             >
               Atrás
             </Button>
@@ -152,6 +160,7 @@ const CourseCreationWizard = ({ periods, teacherId, onSuccess, onCancel }) => {
             <Button 
               onClick={handleNext}
               variant="primary"
+              endIcon={<PlusIcon className="h-5 w-5" />}
             >
               Siguiente
             </Button>
@@ -159,8 +168,9 @@ const CourseCreationWizard = ({ periods, teacherId, onSuccess, onCancel }) => {
             <Button 
               onClick={handleSubmit}
               variant="primary"
+              endIcon={<CheckIcon className="h-5 w-5" />}
             >
-              Finalizar y Crear Curso
+              Finalizar Curso
             </Button>
           )}
         </div>

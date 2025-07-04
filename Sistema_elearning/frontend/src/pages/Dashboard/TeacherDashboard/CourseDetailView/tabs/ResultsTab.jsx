@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchQuizResults } from '../../../api/quizzes';
+import { fetchQuizResults } from '../../../../../api/quizzes';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const ResultsTab = ({ courseId }) => {

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Tabs, Tab, Box } from '@mui/material';
-import CourseInfoTab from './CourseInfoTab';
-import MaterialsTab from './MaterialsTab';
-import ObjectivesTab from './ObjectivesTab';
-import EvaluationsTab from './EvaluationsTab';
-import ResultsTab from './ResultsTab';
+import CourseInfoTab from "./tabs/CourseInfoTab";
+import MaterialsTab from "./tabs/MaterialsTab";
+import ObjectivesTab from "./tabs/ObjectivesTab";
+import EvaluationsTab from "./tabs/EvaluationsTab";
+import ResultsTab from "./tabs/ResultsTab";
 
 const CourseDetailView = ({ course, onQuizCreated }) => {
   const [activeTab, setActiveTab] = useState('info');

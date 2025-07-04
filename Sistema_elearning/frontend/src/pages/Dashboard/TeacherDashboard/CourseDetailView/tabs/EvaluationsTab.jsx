@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import QuizForm from './QuizForm';
+import QuizForm from '../QuizForm';
 import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 const EvaluationsTab = ({ quizzes, courseId, onQuizCreated }) => {
