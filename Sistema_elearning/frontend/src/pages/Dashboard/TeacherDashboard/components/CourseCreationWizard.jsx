@@ -4,7 +4,7 @@ import CourseBasicInfo from './CourseBasicInfo';
 import InstructionalObjectivesForm from '../forms/InstructionalObjectivesForm';
 import CourseMaterialsUpload from '../forms/CourseMaterialsUpload';
 import CreateQuizForm from '../forms/CreateQuizForm';
-import Button from '../../../../components/common/Button';
+import { Button }  from '../../../../components/common/Button';
 import {
   PlusIcon,
   TrashIcon,

@@ -51,4 +51,5 @@ Button.propTypes = {
   endIcon: PropTypes.node
 };
 
+export { Button };
 export default Button;

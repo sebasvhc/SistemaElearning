@@ -1,4 +1,4 @@
-// api/quizzes.js
+// src/api/quizzes.js
 import api from './api';
 
 export const createQuiz = async (quizData) => {
@@ -27,7 +27,6 @@ export const getQuizzesByCourse = async (courseId) => {
 
 export const getStudentQuizzes = async () => {
   try {
-    // Usa la ruta exacta como está definida en tu backend
     const response = await api.get('/student-quizzes/');
     return response.data;
   } catch (error) {
@@ -60,7 +59,8 @@ export const submitQuizAnswers = async (quizId, answers) => {
     }
 };
 
-export const getQuizResults = async (quizId) => {
+// Función renombrada de getQuizResults a fetchQuizResults
+export const fetchQuizResults = async (quizId) => {
     try {
         const response = await api.get(`/quizzes/${quizId}/results/`);
         return response.data;
@@ -69,3 +69,6 @@ export const getQuizResults = async (quizId) => {
         throw error;
     }
 };
+
+// Exportación adicional por si hay otras partes del código que usen el nombre anterior
+export const getQuizResults = fetchQuizResults;
