@@ -3,7 +3,7 @@ import { Stepper, Step, StepLabel, Box } from '@mui/material';
 import CourseBasicInfo from './CourseBasicInfo';
 import InstructionalObjectivesForm from '../forms/InstructionalObjectivesForm';
 import CourseMaterialsUpload from '../forms/CourseMaterialsUpload';
-import CreateQuizForm from '../forms/CreateQuizForm';
+import CreateQuizForm from '../CourseDetailView/QuizForm';
 import { Button }  from '../../../../components/common/Button';
 import {
   PlusIcon,
@@ -20,18 +20,27 @@ const steps = [
   'Evaluaciones'
 ];
 
-const CourseCreationWizard = ({ periods, teacherId, onSuccess, onCancel }) => {
+const CourseCreationWizard = ({ teacherId, onSuccess, onCancel }) => {
   const [activeStep, setActiveStep] = useState(0);
+  
+  // Definición de periodos académicos
+  const periodOptions = [
+    { value: 'I', label: 'Periodo I' },
+    { value: 'II', label: 'Periodo II' },
+    { value: 'ANUAL', label: 'Anualizado' }
+  ];
+
   const [courseData, setCourseData] = useState({
     title: '',
     description: '',
-    period: periods[0]?.value || 'I',
+    period: periodOptions[0].value, // Usar el primer periodo como default
     year: new Date().getFullYear(),
     teacher_id: teacherId,
     objectives: [],
     materials: [],
     quizzes: []
   });
+  
   const [errors, setErrors] = useState({});
 
   const validateStep = (step) => {
@@ -40,6 +49,7 @@ const CourseCreationWizard = ({ periods, teacherId, onSuccess, onCancel }) => {
     if (step === 0) {
       if (!courseData.title.trim()) newErrors.title = 'El título es requerido';
       if (!courseData.period) newErrors.period = 'Selecciona un período';
+      if (!courseData.year) newErrors.year = 'El año es requerido';
     }
     
     if (step === 1 && courseData.objectives.length === 0) {
@@ -62,13 +72,20 @@ const CourseCreationWizard = ({ periods, teacherId, onSuccess, onCancel }) => {
 
   const handleSubmit = async () => {
     try {
+      // Preparar datos para enviar al backend
+      const payload = {
+        ...courseData,
+        // Si es anualizado, podemos agregar un flag adicional
+        is_annual: courseData.period === 'ANUAL'
+      };
+
       const response = await fetch('/api/courses/create-complete/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify(courseData)
+        body: JSON.stringify(payload)
       });
       
       if (!response.ok) throw new Error('Error al crear el curso');
@@ -98,7 +115,7 @@ const CourseCreationWizard = ({ periods, teacherId, onSuccess, onCancel }) => {
         {activeStep === 0 && (
           <CourseBasicInfo 
             courseData={courseData}
-            periods={periods}
+            periods={periodOptions} // Pasar las opciones de periodos
             updateCourseData={updateCourseData}
             errors={errors}
           />
@@ -125,6 +142,7 @@ const CourseCreationWizard = ({ periods, teacherId, onSuccess, onCancel }) => {
             quizzes={courseData.quizzes}
             updateQuizzes={(qz) => updateCourseData('quizzes', qz)}
             courseId={courseData.id}
+            onCancel={() => setActiveStep(2)}
           />
         )}
       </Box>

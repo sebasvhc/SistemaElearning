@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
 from django.db import transaction
 from django.utils import timezone
 from datetime import timedelta
@@ -97,12 +98,20 @@ class CompleteCourseCreateView(APIView):
         data = request.data
         current_year = timezone.now().year
 
+        # Validar periodo
+        period = data.get('period')
+        if period not in dict(Course.PERIOD_CHOICES).keys():
+            return Response(
+                {"period": "Período académico inválido"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         # Validar y crear el curso
         course_serializer = CourseSerializer(data={
             'title': data.get('title'),
             'description': data.get('description'),
-            'period': data.get('period'),
-            'year': current_year,
+            'period': period,
+            'year': data.get('year', current_year),
             'teacher': request.user.id
         })
         
@@ -152,9 +161,11 @@ class InstructionalObjectiveViewSet(viewsets.ModelViewSet):
         )['order__max'] or 0
         serializer.save(course=course, order=last_order + 1)
 
+# courses/views.py - Modificar CourseMaterialViewSet
 class CourseMaterialViewSet(viewsets.ModelViewSet):
     serializer_class = CourseMaterialSerializer
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = (MultiPartParser, FormParser)
 
     def get_queryset(self):
         course_id = self.kwargs.get('course_pk')
@@ -167,7 +178,7 @@ class CourseMaterialViewSet(viewsets.ModelViewSet):
         course = Course.objects.get(pk=self.kwargs['course_pk'])
         if course.teacher != self.request.user:
             raise PermissionDenied("No puedes añadir materiales a este curso.")
-        serializer.save(course=course)
+        serializer.save(course=course, uploaded_by=self.request.user)
 
     def create(self, request, *args, **kwargs):
         # Manejar la subida de archivos
@@ -443,3 +454,64 @@ class CourseDetailView(generics.RetrieveAPIView):
         if course.teacher != self.request.user and not course.students.filter(id=self.request.user.id).exists():
             raise PermissionDenied("No tienes acceso a este curso.")
         return course
+
+class BulkCourseMaterialUpload(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, course_pk):
+        try:
+            course = Course.objects.get(pk=course_pk)
+            
+            # Verificar que el usuario es el profesor del curso
+            if request.user != course.teacher:
+                return Response(
+                    {"error": "No tienes permiso para agregar materiales a este curso"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            files = request.FILES.getlist('files')
+            title = request.data.get('title')
+            material_type = request.data.get('material_type', 'DOC')
+            description = request.data.get('description', '')
+
+            if not files:
+                return Response(
+                    {"error": "No se han proporcionado archivos"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            created_materials = []
+            for file in files:
+                material = CourseMaterial.objects.create(
+                    course=course,
+                    title=title or file.name.split('.')[0],  # Usar nombre del archivo sin extensión
+                    material_type=material_type,
+                    file=file,
+                    description=description,
+                    uploaded_by=request.user
+                )
+                created_materials.append(material)
+
+            serializer = CourseMaterialSerializer(
+                created_materials, 
+                many=True,
+                context={'request': request}
+            )
+            
+            return Response({
+                "message": f"{len(created_materials)} materiales subidos exitosamente",
+                "materials": serializer.data
+            }, status=status.HTTP_201_CREATED)
+
+        except Course.DoesNotExist:
+            return Response(
+                {"error": "Curso no encontrado"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

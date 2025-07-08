@@ -10,6 +10,8 @@ from .models import (
     InstructionalObjective,
     CourseMaterial
 )
+from rest_framework.parsers import MultiPartParser, FormParser
+from django.db import transaction
 
 User = get_user_model()
 
@@ -20,12 +22,35 @@ class InstructionalObjectiveSerializer(serializers.ModelSerializer):
         fields = ['id', 'description', 'order']
 
 class CourseMaterialSerializer(serializers.ModelSerializer):
+    file_url = serializers.SerializerMethodField()
+    file_name = serializers.SerializerMethodField()
+    material_type_display = serializers.CharField(
+        source='get_material_type_display', 
+        read_only=True
+    )
+
     class Meta:
         model = CourseMaterial
         fields = [
-            'id', 'title', 'material_type', 'file', 
-            'url', 'description', 'created_at'
+            'id', 'title', 'material_type', 'material_type_display',
+            'file', 'file_url', 'file_name', 'url', 'description', 
+            'created_at', 'uploaded_by'
         ]
+        extra_kwargs = {
+            'file': {'write_only': True},
+            'uploaded_by': {'read_only': True}
+        }
+
+    def get_file_url(self, obj):
+        if obj.file:
+            return self.context['request'].build_absolute_uri(obj.file.url)
+        return None
+
+    def get_file_name(self, obj):
+        if obj.file:
+            return obj.file.name.split('/')[-1]
+        return None
+        
 
 class GamificationSerializer(serializers.ModelSerializer):
     class Meta:

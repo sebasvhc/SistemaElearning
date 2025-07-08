@@ -10,6 +10,7 @@ class Course(models.Model):
     PERIOD_CHOICES = (
         ('I', 'Periodo I'),
         ('II', 'Periodo II'),
+        ('ANUAL', 'Anualizado'),
     )
     
     title = models.CharField(max_length=200)
@@ -25,18 +26,28 @@ class Course(models.Model):
         blank=True
     )
     period = models.CharField(
-        max_length=2,
+        max_length=5,  # Aumentado para 'ANUAL'
         choices=PERIOD_CHOICES,
         default='I'
     )
     year = models.PositiveIntegerField(
         default=timezone.now().year
     )
+    is_annual = models.BooleanField(
+        default=False,
+        help_text="Indica si el curso es anualizado"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created_at']
+        unique_together = ['title', 'period', 'year', 'teacher']  # Evitar duplicados
+
+    def save(self, *args, **kwargs):
+        # Autoestablecer is_annual basado en el periodo
+        self.is_annual = self.period == 'ANUAL'
+        super().save(*args, **kwargs)
 
 
 class InstructionalObjective(models.Model):

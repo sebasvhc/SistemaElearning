@@ -10,7 +10,8 @@ from .views import (
     GamificationViewSet,
     QuizSubmissionViewSet,
     StudentQuizListView,
-    CourseViewSet
+    CourseViewSet,
+    BulkCourseMaterialUpload
 )
 
 router = DefaultRouter()
@@ -37,4 +38,5 @@ urlpatterns = [
     path('student-courses/', StudentCoursesList.as_view(), name='student-courses'),
     path('teacher-courses/', TeacherCoursesView.as_view(), name='teacher-courses'),
     path('student-quizzes/', StudentQuizListView.as_view(), name='student-quizzes'),
+    path('courses/<int:course_pk>/materials/bulk/', BulkCourseMaterialUpload.as_view(), name='bulk-material-upload'),
 ]

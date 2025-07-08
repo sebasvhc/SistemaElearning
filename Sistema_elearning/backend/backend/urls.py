@@ -28,4 +28,5 @@ urlpatterns = [
     path('api/users/', include('users.urls')),
     path('api/', include(router.urls)),  # Mueve el router aquí
     path('api/', include('courses.urls')),  # Este incluye tus vistas adicionales
+    
 ]
