@@ -34,22 +34,35 @@ class Course(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_finalized = models.BooleanField(default=False)
+
+    def clean(self):
+        # Validación adicional para asegurar que el peso total sea 100% cuando se finalice
+        if self.is_finalized:
+            total_weight = self.objectives.aggregate(Sum('weight'))['weight__sum'] or 0
+            if total_weight != 100:
+                raise ValidationError(
+                    f'No se puede finalizar el curso. La suma total de porcentajes debe ser 100% (actual: {total_weight}%)'
+                )
 
     class Meta:
         ordering = ['-created_at']
 
 
 class InstructionalObjective(models.Model):
-    course = models.ForeignKey(
-        Course,
-        on_delete=models.CASCADE,
-        related_name='objectives'
-    )
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='objectives')
     description = models.TextField()
     order = models.PositiveIntegerField(default=0)
-
+    weight = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2,
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)]
+    )
+    
     class Meta:
         ordering = ['order']
+        unique_together = ['course', 'order']
 
 
 class CourseMaterial(models.Model):
@@ -82,27 +95,24 @@ class CourseMaterial(models.Model):
 
 
 class Quiz(models.Model):
-    course = models.ForeignKey(
-        Course, 
-        on_delete=models.CASCADE, 
-        related_name='quizzes'
-    )
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='quizzes')
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    is_published = models.BooleanField(default=False)
-    passing_score = models.IntegerField(
-        default=70,
-        validators=[MinValueValidator(0), MaxValueValidator(100)]
+    due_date = models.DateTimeField()
+    max_points = models.PositiveIntegerField(
+        default=20,
+        validators=[MaxValueValidator(20)]
     )
-    
-    class Meta:
-        ordering = ['-created_at']
-        verbose_name_plural = 'quizzes'
+    objectives = models.ManyToManyField(
+        InstructionalObjective,
+        through='QuizObjective',
+        related_name='quizzes'
+    )
 
-    def __str__(self):
-        return f"{self.title} ({self.course.title})"
+class QuizObjective(models.Model):
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
+    objective = models.ForeignKey(InstructionalObjective, on_delete=models.CASCADE)
+    points = models.PositiveIntegerField()
 
 
 class Question(models.Model):

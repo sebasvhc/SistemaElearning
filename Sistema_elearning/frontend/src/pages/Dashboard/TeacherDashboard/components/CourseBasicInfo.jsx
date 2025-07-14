@@ -1,8 +1,19 @@
-const CourseBasicInfo = ({ courseData, periods, updateCourseData, errors }) => {
+import React from 'react';
+
+const CourseBasicInfo = ({ courseData, updateCourseData, errors = {} }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     updateCourseData(name, value);
   };
+
+  // Opciones de período que coinciden exactamente con PERIOD_CHOICES del modelo
+  const periodOptions = [
+    { value: 'I', label: 'Periodo I' },
+    { value: 'II', label: 'Periodo II' }
+  ];
+
+  // Obtener el año actual para el campo year
+  const currentYear = new Date().getFullYear();
 
   return (
     <div className="space-y-4">
@@ -13,7 +24,7 @@ const CourseBasicInfo = ({ courseData, periods, updateCourseData, errors }) => {
         <input
           type="text"
           name="title"
-          value={courseData.title}
+          value={courseData.title || ''}
           onChange={handleChange}
           className={`w-full p-3 border rounded-lg ${errors.title ? 'border-red-500' : 'border-gray-300'}`}
           required
@@ -27,7 +38,7 @@ const CourseBasicInfo = ({ courseData, periods, updateCourseData, errors }) => {
         </label>
         <textarea
           name="description"
-          value={courseData.description}
+          value={courseData.description || ''}
           onChange={handleChange}
           rows={3}
           className="w-full p-3 border border-gray-300 rounded-lg"
@@ -41,11 +52,12 @@ const CourseBasicInfo = ({ courseData, periods, updateCourseData, errors }) => {
           </label>
           <select
             name="period"
-            value={courseData.period}
+            value={courseData.period || 'I'}  // Valor por defecto 'I' como en el modelo
             onChange={handleChange}
             className={`w-full p-3 border rounded-lg ${errors.period ? 'border-red-500' : 'border-gray-300'}`}
+            required
           >
-            {periods.map((period) => (
+            {periodOptions.map((period) => (
               <option key={period.value} value={period.value}>
                 {period.label}
               </option>
@@ -59,11 +71,13 @@ const CourseBasicInfo = ({ courseData, periods, updateCourseData, errors }) => {
             Año
           </label>
           <input
-            type="text"
+            type="number"
             name="year"
-            value={courseData.year}
-            readOnly
-            className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100"
+            value={courseData.year || currentYear}  // Año actual por defecto
+            onChange={handleChange}
+            min="2000"
+            max="2100"
+            className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-700"
           />
         </div>
       </div>

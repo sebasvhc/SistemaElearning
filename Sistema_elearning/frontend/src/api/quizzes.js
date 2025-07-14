@@ -3,7 +3,7 @@ import api from './api';
 
 export const createQuiz = async (quizData) => {
     try {
-        const response = await api.post('/quizzes/', quizData);
+        const response = await api.post('/courses/${quizData.course}/quizzes/', quizData);
         return response.data;
     } catch (error) {
         console.error('Error creating quiz:', error);

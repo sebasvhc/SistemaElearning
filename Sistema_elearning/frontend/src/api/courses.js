@@ -6,11 +6,22 @@ export const fetchTeacherCourses = async () => {
         const response = await api.get('/courses/teacher/');
         return response.data;
     } catch (error) {
-        console.error('Error fetching teacher courses:', error);
-        if (error.response?.status === 401) {
+        console.error('Error fetching teacher courses:', {
+            status: error.response?.status,
+            message: error.message,
+            url: error.config?.url,
+            responseData: error.response?.data
+        });
+        
+        // Manejo específico de errores
+        if (error.response?.status === 404) {
+            throw new Error('Endpoint no encontrado. Verifica la conexión con el backend');
+        } else if (error.response?.status === 401) {
             localStorage.removeItem('token');
             window.location.href = '/login';
+            throw new Error('Sesión expirada. Por favor inicia sesión nuevamente');
         }
+        
         throw error;
     }
 };
@@ -95,4 +106,19 @@ export const uploadCourseMaterial = async (courseId, formData) => {
     }
   );
   return response.data;
+};
+
+// api/courses.js
+export const finalizeCourse = async (courseId) => {
+  try {
+    const response = await api.post(`/courses/${courseId}/finalize/`);
+    return response.data;
+  } catch (error) {
+    console.error('Error finalizing course:', {
+      status: error.response?.status,
+      message: error.message,
+      responseData: error.response?.data
+    });
+    throw error;
+  }
 };

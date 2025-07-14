@@ -18,6 +18,7 @@ import {
   UserGroupIcon,
   ArrowLeftIcon
 } from '@heroicons/react/24/outline';
+import FinalizeCourseButton from "./components/FinalizeCourseButton";
 
 const TeacherDashboard = () => {
   // Estados

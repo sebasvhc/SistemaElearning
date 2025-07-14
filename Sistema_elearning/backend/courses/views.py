@@ -97,6 +97,15 @@ class CompleteCourseCreateView(APIView):
         data = request.data
         current_year = timezone.now().year
 
+        # Validar que la suma de porcentajes no exceda 100%
+        objectives = data.get('objectives', [])
+        total_weight = sum(float(obj.get('weight', 0)) for obj in objectives)
+        if total_weight > 100:
+            return Response(
+                {'error': 'La suma total de porcentajes no puede exceder 100%'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         # Validar y crear el curso
         course_serializer = CourseSerializer(data={
             'title': data.get('title'),
@@ -178,6 +187,7 @@ class CourseMaterialViewSet(viewsets.ModelViewSet):
         return super().create(request, *args, **kwargs)
 
 class QuizViewSet(viewsets.ModelViewSet):
+    queryset = Quiz.objects.all()
     serializer_class = QuizSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -195,11 +205,37 @@ class QuizViewSet(viewsets.ModelViewSet):
             return QuizDetailSerializer
         return super().get_serializer_class()
 
-    def perform_create(self, serializer):
-        course = serializer.validated_data['course']
-        if course.teacher != self.request.user:
-            raise PermissionDenied("No eres el profesor de este curso.")
-        serializer.save()
+    def create(self, request, *args, **kwargs):
+        try:
+            # Verifica que el curso pertenezca al profesor
+            course_id = request.data.get('course')
+            course = Course.objects.get(pk=course_id)
+            
+            if course.teacher != request.user:
+                raise PermissionDenied("No eres el profesor de este curso")
+            
+            # Procesa objetivos si existen
+            objectives_data = request.data.pop('objectives', [])
+            
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            quiz = serializer.save()
+            
+            # Crea relaciones con objetivos
+            for obj_data in objectives_data:
+                QuizObjective.objects.create(
+                    quiz=quiz,
+                    objective_id=obj_data.get('objective'),
+                    points=obj_data.get('points', 1)
+                )
+            
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     @action(detail=True, methods=['post'])
     def publish(self, request, pk=None):
@@ -443,3 +479,93 @@ class CourseDetailView(generics.RetrieveAPIView):
         if course.teacher != self.request.user and not course.students.filter(id=self.request.user.id).exists():
             raise PermissionDenied("No tienes acceso a este curso.")
         return course
+
+class QuizCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, course_id):
+        try:
+            course = Course.objects.get(pk=course_id)
+            if course.teacher != request.user:
+                raise PermissionDenied("No eres el profesor de este curso")
+
+            serializer = QuizSerializer(data=request.data)
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+            quiz = serializer.save(course=course)
+            
+            # Asociar objetivos con sus puntos
+            objectives_data = request.data.get('objectives', [])
+            for obj_data in objectives_data:
+                QuizObjective.objects.create(
+                    quiz=quiz,
+                    objective_id=obj_data['objective'],
+                    points=obj_data['points']
+                )
+
+            return Response(QuizSerializer(quiz).data, status=status.HTTP_201_CREATED)
+            
+        except Course.DoesNotExist:
+            return Response(
+                {'error': 'Curso no encontrado'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+class FinalizeCourseView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @transaction.atomic
+    def post(self, request, course_id):
+        try:
+            course = Course.objects.get(pk=course_id)
+            
+            # Verificar que el usuario es el profesor del curso
+            if course.teacher != request.user:
+                raise PermissionDenied("Solo el profesor puede finalizar este curso")
+            
+            # Verificar que todos los objetivos tengan porcentaje asignado
+            objectives = course.objectives.all()
+            if not objectives.exists():
+                return Response(
+                    {'error': 'El curso debe tener al menos un objetivo'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            total_weight = sum(obj.weight for obj in objectives)
+            if total_weight != 100:
+                return Response(
+                    {'error': f'La suma total de porcentajes debe ser 100% (actual: {total_weight}%)'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Verificar que haya evaluaciones creadas
+            quizzes = course.quizzes.all()
+            if not quizzes.exists():
+                return Response(
+                    {'error': 'El curso debe tener al menos una evaluación'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Verificar que los puntos de las evaluaciones no excedan el límite
+            for quiz in quizzes:
+                if quiz.max_points > 20:
+                    return Response(
+                        {'error': f'La evaluación "{quiz.title}" excede el límite de 20 puntos'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Marcar el curso como finalizado
+            course.is_finalized = True
+            course.save()
+            
+            return Response(
+                {'status': 'Curso finalizado exitosamente'},
+                status=status.HTTP_200_OK
+            )
+            
+        except Course.DoesNotExist:
+            return Response(
+                {'error': 'Curso no encontrado'},
+                status=status.HTTP_404_NOT_FOUND
+            )

@@ -8,7 +8,8 @@ from .models import (
     Gamification,
     QuizSubmission,
     InstructionalObjective,
-    CourseMaterial
+    CourseMaterial,
+    QuizObjective
 )
 
 User = get_user_model()
@@ -17,7 +18,15 @@ User = get_user_model()
 class InstructionalObjectiveSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstructionalObjective
-        fields = ['id', 'description', 'order']
+        fields = ['id', 'description', 'order', 'weight']
+        extra_kwargs = {
+            'weight': {
+                'error_messages': {
+                    'max_value': 'El peso no puede ser mayor a 100%',
+                    'min_value': 'El peso no puede ser negativo'
+                }
+            }
+        }
 
 class CourseMaterialSerializer(serializers.ModelSerializer):
     class Meta:
@@ -58,14 +67,20 @@ class CourseSerializer(serializers.ModelSerializer):
         source='students.count',
         read_only=True
     )
+    is_finalized = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Course
         fields = [
             'id', 'title', 'description', 'teacher', 'teacher_name',
-            'student_count', 'created_at', 'updated_at'
+            'student_count', 'created_at', 'updated_at', 'is_finalized',
+            'period', 'year'  # Asegúrate de incluir todos los campos necesarios
         ]
-        extra_kwargs = {'teacher': {'read_only': True}}
+        extra_kwargs = {
+            'teacher': {'read_only': True},
+            'period': {'required': True},
+            'year': {'required': True}
+        }
 
 class CourseDetailSerializer(CourseSerializer):
     objectives = InstructionalObjectiveSerializer(many=True, read_only=True)
@@ -125,6 +140,23 @@ class QuizWithQuestionsSerializer(QuizSerializer):
             obj.questions.all().order_by('order'),
             many=True
         ).data
+
+class QuizObjectiveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizObjective
+        fields = ['objective', 'points']
+
+class QuizSerializer(serializers.ModelSerializer):
+    objectives = QuizObjectiveSerializer(many=True, source='quizobjective_set')
+    
+    class Meta:
+        model = Quiz
+        fields = ['id', 'title', 'description', 'due_date', 'max_points', 'objectives']
+        
+    def validate(self, data):
+        if data['max_points'] > 20:
+            raise serializers.ValidationError("El máximo de puntos por evaluación es 20")
+        return data
 
 # ============== SERIALIZADORES DE ENVÍOS ==============
 class QuizSubmissionSerializer(serializers.ModelSerializer):
